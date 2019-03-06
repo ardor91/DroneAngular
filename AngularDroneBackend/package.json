@@ -1,0 +1,11 @@
+{
+    "name": "sakama-backend",
+    "version": "0.0.1",
+    "description": "back",
+    "dependencies": {
+        "@types/serialport": "^7.0.2",
+        "express": "^4.16.4",
+        "serialport": "^7.1.4",
+        "socket.io": "^2.2.0"
+    }
+}
