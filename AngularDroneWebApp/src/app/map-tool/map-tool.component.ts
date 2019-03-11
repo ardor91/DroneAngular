@@ -1,6 +1,9 @@
 import { Component, AfterViewInit } from '@angular/core';
 import { MapLoaderService } from './map.loader'
 import { PathLogic } from '../../shared/utilities/PathLogic'
+import { Observable, Subscription } from 'rxjs';
+import { SocketService } from 'src/app/socket.service';
+
 declare var google: any;
 
 @Component({
@@ -13,7 +16,7 @@ export class MapToolComponent implements AfterViewInit {
   drawingManager: any;
   lastPolygon: any;
 
-  constructor() {
+  constructor(private socketService: SocketService) {
   }
 
   ngAfterViewInit() {

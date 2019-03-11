@@ -4,6 +4,7 @@
     "description": "back",
     "dependencies": {
         "@types/serialport": "^7.0.2",
+        "body-parser": "^1.18.3",
         "express": "^4.16.4",
         "serialport": "^7.1.4",
         "socket.io": "^2.2.0"
