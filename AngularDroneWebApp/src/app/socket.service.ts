@@ -6,5 +6,7 @@ import { Socket } from 'ngx-socket-io';
 })
 export class SocketService {
 
+  newcoordinate = this.socket.fromEvent<string>('newcoordinate');
+
   constructor(private socket: Socket) { }
 }

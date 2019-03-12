@@ -3,6 +3,7 @@ import { MapLoaderService } from './map.loader'
 import { PathLogic } from '../../shared/utilities/PathLogic'
 import { Observable, Subscription } from 'rxjs';
 import { SocketService } from 'src/app/socket.service';
+import { ApiService } from 'src/app/api.service';
 
 declare var google: any;
 
@@ -16,13 +17,43 @@ export class MapToolComponent implements AfterViewInit {
   drawingManager: any;
   lastPolygon: any;
 
-  constructor(private socketService: SocketService) {
+  availablePorts: any;
+  selectedPort: string;
+  newGps: string;
+
+  private _gpsSub: Subscription;
+
+  constructor(private socketService: SocketService, private apiService: ApiService) {
   }
 
   ngAfterViewInit() {
     MapLoaderService.load().then(() => {
       this.drawPolygon();
     })
+  }
+
+  ngOnInit() {
+    this.getPorts();
+  }
+ 
+  getPorts(): void {
+    this.apiService.getPorts()
+        .subscribe(ports => {
+          this.availablePorts = ports;
+          console.log(ports);
+        });
+  }
+
+  refreshPorts(): void {
+    this.getPorts();
+  }
+
+  startListening(): void {
+    console.log("Selected: ", this.selectedPort);
+    this.apiService.startListening(this.selectedPort).subscribe(result => {
+      console.log(result);
+      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps; console.log("NEW GPS: ", this.newGps)});
+    });
   }
 
   splitSomething() {

@@ -5,9 +5,8 @@ const http = require('http');
 const bodyParser = require('body-parser');
 const io = require('socket.io')(http);
 
-const SerialPort = require('serialport');
-const Readline = require('@serialport/parser-readline')
-const port = new SerialPort('COM15', {baudRate: 9600, autoOpen: false})
+
+
 
 
 
@@ -55,8 +54,12 @@ io.on('connection', function(socket){
   });
 });
 
+/*SerialPort.list().then(
+  ports => ports.forEach(console.log),
+  err => console.error(err)
+)
 
-
+const port = new SerialPort('COM15', {baudRate: 9600, autoOpen: false})
 port.open(function (err) {
     if (err) {
       return console.log('Error opening port: ', err.message)
@@ -65,23 +68,7 @@ port.open(function (err) {
 
   })
 
-  port.on('open', function() {
-    console.log("Port opened Event");
-  })
-
-port.on('error', function(err) {
-    console.log('Error: ', err.message);
-})
-
-port.on('data', function (data) {
-  //console.log('Data:', data)
-})
-
-const parser = port.pipe(new Readline('*'))
-parser.on('data', function(data) {
-    console.log('Data:', data);
-    io.emit('serial input', data);
-})
+*/
 
 /**
  * Listen on provided port, on all network interfaces.

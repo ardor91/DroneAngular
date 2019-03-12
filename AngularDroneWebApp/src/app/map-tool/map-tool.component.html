@@ -2,7 +2,18 @@
   map-tool works!
 </p>
 
+<mat-form-field>
+  <mat-select placeholder="Ports available" [(ngModel)]="selectedPort" name="portsSelect">
+    <mat-option *ngFor="let port of availablePorts" [value]="port">
+      {{port}}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+
+<button mat-raised-button (click)="refreshPorts()">Refresh ports</button>
+<button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Start Listening {{selectedPort}}</button>
+
 <button (click)="drawAAAA()">AAAAA!!!</button>
 <button (click)="splitSomething()">BBBBB!!!</button>
 <button (click)="drawCCCC()">CCCCC!!!</button>
-<div id="map"></div>
+<div style="margin-top: 200px" id="map"></div>
