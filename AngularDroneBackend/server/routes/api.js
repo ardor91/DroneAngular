@@ -7,9 +7,9 @@ let port = undefined;
 
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline')
-const http = require('http');
-const io = require('socket.io')(http);
-io.origins('*:*');
+const nhttp = require('http').Server(express);
+const io = require('socket.io')(nhttp);
+//io.origins('http://localhost:3000');
 /* GET api listing. */
 router.get('/', (req, res) => {
   res.send('api works');
@@ -45,7 +45,9 @@ router.put('/ports', (req, res) => {
       })
 
 
-    res.send("success");
+    res.send({result:"success"});
 });
+
+nhttp.listen(4444);
 
 module.exports = router;

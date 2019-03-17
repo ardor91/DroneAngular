@@ -21,6 +21,8 @@ export class MapToolComponent implements AfterViewInit {
   selectedPort: string;
   newGps: string;
 
+  prevPoint: any;
+
   private _gpsSub: Subscription;
 
   constructor(private socketService: SocketService, private apiService: ApiService) {
@@ -51,8 +53,39 @@ export class MapToolComponent implements AfterViewInit {
   startListening(): void {
     console.log("Selected: ", this.selectedPort);
     this.apiService.startListening(this.selectedPort).subscribe(result => {
-      console.log(result);
-      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps; console.log("NEW GPS: ", this.newGps)});
+      console.log("START LISTENING RESULT: " + result);
+      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps; console.log("NEW GPS: ", this.newGps); this.drawReceivedFromSerial(this.newGps)});
+    });
+  }
+
+  drawReceivedFromSerial(gps) {
+
+    console.log("Parsed0: ", gps);
+    gps = gps.substr(1);
+    console.log("Parsed1: ", gps);
+    gps = gps.substr(0, gps.length - 2);
+    console.log("Parsed2: ", gps);
+    gps = gps.split(";");
+    console.log("Parsed3: ", gps);
+    gps = {lat: +gps[0], lng: +gps[1]};
+    console.log("Parsed4: ", gps);
+    var flightPlanCoordinates = [
+      {lat: 52.461099646230515, lng: 30.95373939121498},
+      {lat: 52.462099646230515, lng: 30.97373939121498},
+      {lat: 52.464099646230515, lng: 30.99373939121498},
+      {lat: 52.465099646230515, lng: 30.91373939121498}
+    ];
+    if(this.prevPoint)
+      this.prevPoint.setMap(null);
+    this.prevPoint = new google.maps.Circle({
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#FF0000',
+      fillOpacity: 0.35,
+      map: this.map,
+      center: {lat: gps.lat, lng: gps.lng},
+      radius: 10
     });
   }
 

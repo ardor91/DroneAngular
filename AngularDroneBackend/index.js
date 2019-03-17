@@ -3,17 +3,34 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const bodyParser = require('body-parser');
-const io = require('socket.io')(http);
-
-
-
-
-
+//const io = require('socket.io')(http);
 
 // Get our API routes
 const api = require('./server/routes/api');
 
 const app = express();
+/*var cors = require('cors');
+
+let whitelist = ['http://localhost:4200','http://localhost:80'];
+        let corsOptions = {
+            origin: (origin, callback)=>{
+                if (whitelist.indexOf(origin) !== -1) {
+                    callback(null, true)
+                } else {
+                    callback(new Error('Not allowed by CORS'))
+                }
+            },credentials: true
+        }
+        app.use(cors(corsOptions));
+*/
+//app.use(cors());
+
+/*app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "http://localhost:4200");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  //res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});*/
 
 // Parsers for POST data
 app.use(bodyParser.json());
@@ -43,7 +60,7 @@ app.set('port', httpport);
  */
 const server = http.createServer(app);
 
-io.on('connection', function(socket){
+/*io.on('connection', function(socket){
   console.log('a user connected');
   socket.on('disconnect', function(){
     console.log('user disconnected');
@@ -52,7 +69,7 @@ io.on('connection', function(socket){
       console.log(msg);
     io.emit('chat message', msg);
   });
-});
+});*/
 
 /*SerialPort.list().then(
   ports => ports.forEach(console.log),
