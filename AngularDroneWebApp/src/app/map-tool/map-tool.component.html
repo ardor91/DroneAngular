@@ -1,7 +1,3 @@
-<p>
-  map-tool works!
-</p>
-
 <mat-form-field>
   <mat-select placeholder="Ports available" [(ngModel)]="selectedPort" name="portsSelect">
     <mat-option *ngFor="let port of availablePorts" [value]="port">
@@ -16,4 +12,4 @@
 <button (click)="drawAAAA()">AAAAA!!!</button>
 <button (click)="splitSomething()">BBBBB!!!</button>
 <button (click)="drawCCCC()">CCCCC!!!</button>
-<div style="margin-top: 200px" id="map"></div>
+<div style="margin-top: 10px" id="map"></div>

@@ -21,7 +21,9 @@ export class MapToolComponent implements AfterViewInit {
   selectedPort: string;
   newGps: string;
 
+
   prevPoint: any;
+  pointsArray: Array<any>;
 
   private _gpsSub: Subscription;
 
@@ -36,6 +38,7 @@ export class MapToolComponent implements AfterViewInit {
 
   ngOnInit() {
     this.getPorts();
+    this.pointsArray = [];
   }
  
   getPorts(): void {
@@ -75,9 +78,10 @@ export class MapToolComponent implements AfterViewInit {
       {lat: 52.464099646230515, lng: 30.99373939121498},
       {lat: 52.465099646230515, lng: 30.91373939121498}
     ];
-    if(this.prevPoint)
-      this.prevPoint.setMap(null);
-    this.prevPoint = new google.maps.Circle({
+    /*if(this.prevPoint)
+      this.prevPoint.setMap(null);*/
+    
+    let point = new google.maps.Circle({
       strokeColor: '#FF0000',
       strokeOpacity: 0.8,
       strokeWeight: 2,
@@ -87,6 +91,23 @@ export class MapToolComponent implements AfterViewInit {
       center: {lat: gps.lat, lng: gps.lng},
       radius: 10
     });
+    if(this.prevPoint) {
+      this.prevPoint.setOptions({
+        fillColor: '#222222',
+        strokeColor: '#444444'
+      });
+    }
+      //this.prevPoint.fillColor = '#222222';
+    this.pointsArray.splice(0, 0, point);
+    this.prevPoint = point;
+    console.log(this.pointsArray);
+    if(this.pointsArray.length > 5)
+    {
+      let oldestPoint = this.pointsArray.pop();
+      console.log("oldest: ", oldestPoint);
+      oldestPoint.setMap(null);
+    }
+
   }
 
   splitSomething() {
