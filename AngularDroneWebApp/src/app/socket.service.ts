@@ -8,5 +8,7 @@ export class SocketService {
 
   newcoordinate = this.socket.fromEvent<string>('newcoordinate');
 
+  testcoord = this.socket.fromEvent<string>('gpstest');
+
   constructor(private socket: Socket) { }
 }

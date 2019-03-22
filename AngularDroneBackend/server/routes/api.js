@@ -1,5 +1,12 @@
 const express = require('express');
 const router = express.Router();
+
+const mavlink = require('mavlink');
+
+let myMAV = new mavlink(0,0);
+
+
+
 const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
 
 const LocalStorage = require('node-localstorage').LocalStorage,
@@ -16,6 +23,28 @@ const io = require('socket.io')(nhttp);
 /* GET api listing. */
 router.get('/', (req, res) => {
   res.send('api works');
+});
+
+let mavport = new SerialPort("COM9", {baudRate: 57600, autoOpen: true});
+myMAV.on("ready", function() {
+  //parse incoming serial data
+  console.log("Mavlink ready");
+  mavport.on('data', function(data) {
+      //console.log("mavdata: ", data);
+      //let json = JSON.stringify(data);
+      //console.log(json);
+      myMAV.parse(data);
+      //console.log("LOL: ", msg);
+  });
+  
+  //listen for messages
+  myMAV.on("GPS_RAW_INT", function(message, fields) {
+      console.log("mavparsedmessage: ", fields);
+      io.emit('gpstest', {lat: (fields.lat / 10000000), lng: (fields.lon / 10000000)}); //524812088
+      //console.log(message.payload.toString());
+      //console.log(message.buffer.toString());
+  });
+
 });
 
 router.get('/ports', (req, res) => {

@@ -9,7 +9,5 @@
 <button mat-raised-button (click)="refreshPorts()">Refresh ports</button>
 <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Start Listening {{selectedPort}}</button>
 
-<button (click)="drawAAAA()">AAAAA!!!</button>
-<button (click)="splitSomething()">BBBBB!!!</button>
-<button (click)="drawCCCC()">CCCCC!!!</button>
+<button (click)="drawCCCC()" *ngIf="this.lastPolygon" mat-raised-button>Make path from polygon</button>
 <div style="margin-top: 10px" id="map"></div>
