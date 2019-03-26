@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
   res.send('api works');
 });
 
-let mavport = new SerialPort("COM9", {baudRate: 57600, autoOpen: true});
+let mavport = new SerialPort("COM12", {baudRate: 57600, autoOpen: true});
 myMAV.on("ready", function() {
   //parse incoming serial data
   console.log("Mavlink ready");

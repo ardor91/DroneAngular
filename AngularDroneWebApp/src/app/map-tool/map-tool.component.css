@@ -1,3 +1,8 @@
 #map {
     height: 800px;
 }
+
+#markerLayer > img[src="drone.png"]{
+    height: 20px;
+    width: 20px;
+  }

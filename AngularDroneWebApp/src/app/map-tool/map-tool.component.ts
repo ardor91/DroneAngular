@@ -30,7 +30,10 @@ export class MapToolComponent implements AfterViewInit {
 
   prevGpsPoint: any;
   prevPath: Array<any>;
-  
+
+  image = require('src/assets/images/drone.png');
+  USGSOverlay: any;
+  droneOverlay: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService) {
   }
@@ -38,6 +41,15 @@ export class MapToolComponent implements AfterViewInit {
   ngAfterViewInit() {
     MapLoaderService.load().then(() => {
       this.drawPolygon();
+      this.test();
+
+      var bounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(52.461099646230515, 30.95373939121498),
+        new google.maps.LatLng(52.461099646230515, 30.95373939121498));
+      // The photograph is courtesy of the U.S. Geological Survey.
+      var srcImage = 'https://developers.google.com/maps/documentation/' +
+          'javascript/examples/full/images/talkeetna.png';
+      this.droneOverlay = new this.USGSOverlay(bounds, this.image, this.map);
     })
   }
 
@@ -46,6 +58,8 @@ export class MapToolComponent implements AfterViewInit {
     this.pointsArray = [];
 
     this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; console.log("NEW GPS: ", this.newGps2); this.drawAngledArrow(this.newGps2)});
+
+    
   }
  
   getPorts(): void {
@@ -96,38 +110,6 @@ export class MapToolComponent implements AfterViewInit {
       }],
     });
 
-
-    let contentString = '<div id="content">'+
-    '<div id="siteNotice">'+
-    '</div>'+
-    '<h1 id="firstHeading" class="firstHeading">Uluru</h1>'+
-    '<div id="bodyContent">'+
-    '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
-    'sandstone rock formation in the southern part of the '+
-    'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) '+
-    'south west of the nearest large town, Alice Springs; 450&#160;km '+
-    '(280&#160;mi) by road. Kata Tjuta and Uluru are the two major '+
-    'features of the Uluru - Kata Tjuta National Park. Uluru is '+
-    'sacred to the Pitjantjatjara and Yankunytjatjara, the '+
-    'Aboriginal people of the area. It has many springs, waterholes, '+
-    'rock caves and ancient paintings. Uluru is listed as a World '+
-    'Heritage Site.</p>'+
-    '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">'+
-    'https://en.wikipedia.org/w/index.php?title=Uluru</a> '+
-    '(last visited June 22, 2009).</p>'+
-    '</div>'+
-    '</div>';
-
-var infowindow = new google.maps.InfoWindow({
-  content: contentString
-});
-
-point.addListener('click', function() {
-  infowindow.open(this.map, point);
-});
-
-
-
     if(this.prevPoint)
       this.prevPoint.setMap(null);
     this.prevPoint = point;
@@ -139,15 +121,6 @@ point.addListener('click', function() {
     var lineSymbol = {
       path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
     };
-    /*console.log("Parsed0: ", gps);
-    gps = gps.substr(1);
-    console.log("Parsed1: ", gps);
-    gps = gps.substr(0, gps.length - 2);
-    console.log("Parsed2: ", gps);
-    gps = gps.split(";");
-    console.log("Parsed3: ", gps);
-    gps = {lat: +gps[0], lng: +gps[1]};
-    console.log("Parsed4: ", gps);*/
     var flightPlanCoordinates = [
       {lat: 52.461099646230515, lng: 30.95373939121498},
       {lat: 52.462099646230515, lng: 30.97373939121498},
@@ -165,16 +138,6 @@ point.addListener('click', function() {
       map: this.map
     });
 
-    /*let point = new google.maps.Circle({
-      strokeColor: '#FF0000',
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: '#FF0000',
-      fillOpacity: 0.35,
-      map: this.map,
-      center: {lat: gps.lat, lng: gps.lng},
-      radius: 1
-    });*/
     if(this.prevPoint) {
       this.prevPoint.setOptions({
         fillColor: '#222222',
@@ -292,7 +255,15 @@ console.log("OLOLO: ", this.prevPoint.center);
         }
         
       });
+
       
+      
+    });
+
+    this.map.addListener('click', function(e) {
+      console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
+      component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
+      component.droneOverlay.draw();
     });
 
     google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
@@ -339,4 +310,84 @@ console.log("OLOLO: ", this.prevPoint.center);
     // Add an event listener on the rectangle.
     rectangle.getPath().addListener('set_at', () => {console.log("Event fired");});*/
   }
+test() {
+  this.USGSOverlay = class extends (google.maps.OverlayView as { new():any}) {
+    bounds_: any;
+    image_: any;
+    map_: any;
+    div_: any;
+    rotation_: any;
+    constructor(bounds, image, private map) {
+        super();
+        // Initialize all properties.
+        this.bounds_ = bounds;
+        this.image_ = image;
+        this.map_ = map;
+        this.rotation_ = 0;
+        // Define a property to hold the image's div. We'll
+        // actually create this div upon receipt of the onAdd()
+        // method so we'll leave it null for now.
+        this.div_ = null;
+        // Explicitly call setMap on this overlay.
+        this.setMap(map);
+        this.set
+    }
+    /**
+     * onAdd is called when the map's panes are ready and the overlay has been
+     * added to the map.
+     */
+    onAdd() {
+        const div = document.createElement('div');
+        div.style.borderStyle = 'none';
+        div.style.borderWidth = '0px';
+        div.style.position = 'absolute';
+        // Create the img element and attach it to the div.
+        const img = document.createElement('img');
+        img.src = this.image_;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.position = 'absolute';
+        div.appendChild(img);
+        this.div_ = div;
+        // Add the element to the "overlayLayer" pane.
+        const panes = this.getPanes();
+        panes.overlayLayer.appendChild(div);
+    };
+    draw() {
+        // We use the south-west and north-east
+        // coordinates of the overlay to peg it to the correct position and size.
+        // To do this, we need to retrieve the projection from the overlay.
+        const overlayProjection = this.getProjection();
+        // Retrieve the south-west and north-east coordinates of this overlay
+        // in LatLngs and convert them to pixel coordinates.
+        // We'll use these coordinates to resize the div.
+        const sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
+        const ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
+        // Resize the image's div to fit the indicated dimensions.
+        const div = this.div_;
+        div.style.left = (sw.x - 30) + 'px';
+        div.style.top = (ne.y - 30) + 'px';
+        div.style.width = '60px';
+        div.style.height = '60px';
+        div.style.transform = "rotate(" + this.rotation_ + "deg)";
+        //console.log(ne.x, ne.y, sw.x, sw.y);
+        /*
+        div.style.width = this.width_ + 'px';
+        div.style.height = this.height_ + 'px'; */
+    };
+    setPosition(gps, angle) {
+      this.bounds_ = new google.maps.LatLngBounds(
+        new google.maps.LatLng(gps.lat, gps.lng),
+        new google.maps.LatLng(gps.lat, gps.lng));
+      this.rotation_ = angle;
+    }
+    // The onRemove() method will be called automatically from the API if
+    // we ever set the overlay's map property to 'null'.
+    onRemove() {
+        this.div_.parentNode.removeChild(this.div_);
+        this.div_ = null;
+    };
+};
+}
+  
 }
