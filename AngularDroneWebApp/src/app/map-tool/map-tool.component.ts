@@ -151,8 +151,16 @@ export class MapToolComponent implements AfterViewInit {
         offset: '100%'
       }],
     });*/
-
-    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, gps.angle);
+    let angle = 0;
+    if(this.prevGpsPoint)
+    {
+      var prevP = new google.maps.LatLng(this.prevGpsPoint.lat, this.prevGpsPoint.lng);
+      var currP = new google.maps.LatLng(gps.lat, gps.lng);
+      angle = google.maps.geometry.spherical.computeHeading(prevP, currP);
+    }
+    
+    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, angle + 180);
+    //$.view.overlay.getPanes().overlayLayer.style['zIndex'] = 1001;
 
     if(this.prevPoint)
       this.prevPoint.setMap(null);
@@ -304,7 +312,7 @@ console.log("OLOLO: ", this.prevPoint.center);
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
       //component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
-      component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
+      //component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
 
     google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
@@ -312,9 +320,11 @@ console.log("OLOLO: ", this.prevPoint.center);
         //this is the coordinate, you can assign it to a variable or pass into another function.
         this.lastPolygon = event.overlay.getPath().getArray();
         event.overlay.setOptions({
-          editable: true
+          editable: true,
+          zIndex: 0
         });
-
+        this.droneOverlay.setMap(null);
+        this.droneOverlay.setMap(component.map);
         google.maps.event.addListener(event.overlay, 'dblclick', (function(vertex) {
           console.log(vertex);
           if(event.overlay.getPath().length > 3) {
@@ -388,11 +398,15 @@ test() {
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.position = 'absolute';
+        img.style.zIndex = '10000';
         div.appendChild(img);
         this.div_ = div;
         // Add the element to the "overlayLayer" pane.
         const panes = this.getPanes();
         panes.overlayLayer.appendChild(div);
+        //console.log("PANES: ", panes);
+        //panes.overlayLayer.style['zIndex'] = 500;
+        //panes.markerLayer.style['zIndex'] = 400;
     };
     draw() {
         // We use the south-west and north-east

@@ -65,6 +65,13 @@ io.on("connection", socket => {
     //flightPlan = plan;
     planPointIndex = 0;
     console.log(flightPlan);
+    let lat = 52.461099646230515;
+  let lng = 30.953739391214980;
+  let angle = 0;
+
+  
+
+  emit(lat, lng, angle);
     //targetPosition = position;
   });
 });
@@ -95,7 +102,7 @@ myMAV.on("ready", function() {
 
   
 
-  emit(lat, lng, angle);
+  //emit(lat, lng, angle);
 
 });
 
@@ -113,45 +120,37 @@ function move(current, target) {
     console.log(angle);
     return step;*/
 
-
     let iSpeed = 0.00001;
 
     //let fDistance = Math.sqrt( (current.lat-target.lat)*(current.lat-target.lat) + (current.lng - target.lng)*(current.lng-target.lng) );
 
-    let fRadians = 0;
-    if (current.lat != target.lat)
-    {
-      fRadians = Math.atan( 1.0 * Math.abs(current.lng - target.lng) / Math.abs(current.lat-target.lat) );
-    }
+    let fRadians = Math.atan( Math.abs(current.lng - target.lng) / Math.abs(current.lat - target.lat) );
+
+    //current.angle =((Math.atan( current.lng - target.lng) / (current.lat - target.lat) ) / Math.PI) * 180;
+    //console.log("ANGLE: ", current.angle);
 
     // определяем, на сколько нужно изменить позицию Label по осям
-    let fDiffX = Math.abs(iSpeed * Math.cos(fRadians));
-    let fDiffY = Math.abs(iSpeed * Math.sin(fRadians));
+    let dX = Math.abs(iSpeed * Math.cos(fRadians));
+    let dY = Math.abs(iSpeed * Math.sin(fRadians));
 
-    // преобразование fDiffX, fDiffY в целые числа
-    let iDiffX = fDiffX;
-    let iDiffY = fDiffY;
+    console.log("Diffs: ", dX, dY);
 
     // изменение позиции Label
     if ( target.lat < current.lat ) 
     {
-      current.lat += iDiffX;
+      current.lat -= dX;
     }
     else if ( target.lat > current.lat ) {
-      current.lat -= iDiffX;
+      current.lat += dX;
     }
     if ( target.lng < current.lng ) {
-      current.lng += iDiffY;
+      current.lng -= dY;
     }
     else if ( target.lng > current.lng ) {
-      current.lng -= iDiffY;
+      current.lng += dY;
     }
 
     return current;
-
-    // надеюсь, понятно для чего ниже эти переменные
-    fOstDiffX = fDiffX - iDiffX;
-    fOstDiffY = fDiffY - iDiffY;
 }
 
 function emit(lat, lng, angle) {
@@ -166,6 +165,7 @@ if(targetPosition) {
     let c = move({lat: lat, lng: lng}, targetPosition);
     lat = c.lat;
     lng = c.lng;
+    angle = c.angle;
     onPosition = false;
   }
     /*if(Math.abs(lat - targetPosition.lat) > 0.00001) {
@@ -181,6 +181,9 @@ if(targetPosition) {
     }*/
 console.log(onPosition);
     if(onPosition) {
+      if(flightPlan.length <= planPointIndex) {
+          return;
+      }
       let planElement = flightPlan[planPointIndex];
       planPointIndex++;
       
