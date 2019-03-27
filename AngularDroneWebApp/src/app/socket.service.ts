@@ -11,4 +11,12 @@ export class SocketService {
   testcoord = this.socket.fromEvent<string>('gpstest');
 
   constructor(private socket: Socket) { }
+
+  setNewPosition(gps) {
+    this.socket.emit('newposition', gps);
+  }
+
+  sendFlightPlan(plan) {
+    this.socket.emit('flightplan', plan);
+  }
 }

@@ -9,5 +9,31 @@
 <button mat-raised-button (click)="refreshPorts()">Refresh ports</button>
 <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Start Listening {{selectedPort}}</button>
 
+<mat-slider
+        class="example-margin"
+        tickInterval="1000"
+        [max]="360"
+        [min]="0"
+        [step]="1"
+        [thumbLabel]="thumbLabel"
+        [(ngModel)]="gridAngle"
+        (change)="angleChanged()">
+    </mat-slider>
+
+    <mat-slider
+        class="example-margin"
+        [max]="0.0001"
+        [min]="0.000001"
+        [step]="0.000001"
+        [thumbLabel]="thumbLabel"
+        [(ngModel)]="gridStep"
+        [displayWith]="formatLabel"
+        (change)="stepChanged()">
+    </mat-slider>
+<button mat-raised-button (click)="changeSettings()">Change</button>
+
 <button (click)="drawCCCC()" *ngIf="this.lastPolygon" mat-raised-button>Make path from polygon</button>
+
+<button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
+
 <div style="margin-top: 10px" id="map"></div>

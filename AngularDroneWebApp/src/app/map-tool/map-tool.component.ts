@@ -4,6 +4,7 @@ import { PathLogic } from '../../shared/utilities/PathLogic'
 import { Observable, Subscription } from 'rxjs';
 import { SocketService } from 'src/app/socket.service';
 import { ApiService } from 'src/app/api.service';
+import { isObject } from 'util';
 
 declare var google: any;
 
@@ -35,6 +36,23 @@ export class MapToolComponent implements AfterViewInit {
   USGSOverlay: any;
   droneOverlay: any;
 
+  gridAngle: any;
+  gridStep: any;
+
+  //sliders
+  autoTicks = false;
+  disabled = false;
+  invert = false;
+  max = 100;
+  min = 0;
+  showTicks = false;
+  step = 1;
+  thumbLabel = true;
+  value = 0;
+  vertical = false;
+
+  flightPlan: Array<any>;
+
   constructor(private socketService: SocketService, private apiService: ApiService) {
   }
 
@@ -42,14 +60,9 @@ export class MapToolComponent implements AfterViewInit {
     MapLoaderService.load().then(() => {
       this.drawPolygon();
       this.test();
+      let gpss = new google.maps.LatLng(52.461099646230515, 30.95373939121498);
 
-      var bounds = new google.maps.LatLngBounds(
-        new google.maps.LatLng(52.461099646230515, 30.95373939121498),
-        new google.maps.LatLng(52.461099646230515, 30.95373939121498));
-      // The photograph is courtesy of the U.S. Geological Survey.
-      var srcImage = 'https://developers.google.com/maps/documentation/' +
-          'javascript/examples/full/images/talkeetna.png';
-      this.droneOverlay = new this.USGSOverlay(bounds, this.image, this.map);
+      this.droneOverlay = new this.USGSOverlay(gpss, this.image, this.map);
     })
   }
 
@@ -57,9 +70,35 @@ export class MapToolComponent implements AfterViewInit {
     this.getPorts();
     this.pointsArray = [];
 
-    this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; console.log("NEW GPS: ", this.newGps2); this.drawAngledArrow(this.newGps2)});
+    this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2)});
 
     
+  }
+
+  stepChanged() {
+    console.log(this.gridStep);
+    this.drawCCCC();
+  }
+
+  angleChanged() {
+    console.log(this.gridAngle);
+    this.drawCCCC();
+  }
+
+  formatLabel(value: number | null) {
+    if (!value) {
+      return 0;
+    }
+
+    
+
+    return value * 1000000;
+  }
+
+
+  startWork() {
+    if(!this.flightPlan) return;
+    this.socketService.sendFlightPlan(this.flightPlan);
   }
  
   getPorts(): void {
@@ -78,27 +117,30 @@ export class MapToolComponent implements AfterViewInit {
     console.log("Selected: ", this.selectedPort);
     this.apiService.startListening(this.selectedPort).subscribe(result => {
       console.log("START LISTENING RESULT: " + result);
-      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps; console.log("NEW GPS: ", this.newGps); this.drawReceivedFromSerial(this.newGps)});
+      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps;  this.drawReceivedFromSerial(this.newGps)});
     });
   }
 
   drawAngledArrow(gps) {
-    let lineSymbol = {
+    if(!this.map) return;
+    /*let lineSymbol = {
       path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       scaledSize: new google.maps.Size(200, 200),
-    };
+    };*/
+
+    console.log(gps);
 
     if(!this.prevGpsPoint) {
       this.prevGpsPoint = gps;
       this.map.setOptions({
-        center: gps
+        center: new google.maps.LatLng(gps.lat, gps.lng)
       });
       return;
     }
 
     let polyline = [gps, this.prevGpsPoint];
     console.log(polyline);
-    let point = new google.maps.Polyline({
+    /*let point = new google.maps.Polyline({
       path: polyline,
       strokeColor: '#FF0000',
       strokeOpacity: 0.70001,
@@ -108,13 +150,19 @@ export class MapToolComponent implements AfterViewInit {
         icon: lineSymbol,
         offset: '100%'
       }],
-    });
+    });*/
+
+    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, gps.angle);
 
     if(this.prevPoint)
       this.prevPoint.setMap(null);
-    this.prevPoint = point;
+    //this.prevPoint = point;
 
     this.prevGpsPoint = gps;
+  }
+
+  changeSettings() {
+    console.log(this.gridStep, this.gridAngle);
   }
 
   drawReceivedFromSerial(gps) {
@@ -172,11 +220,10 @@ console.log("OLOLO: ", this.prevPoint.center);
   }
 
   drawCCCC() {
-
     if(!this.lastPolygon) {
       return;
     }
-
+    
     if(this.prevPath) {
       this.prevPath.forEach(element => {
         element.setMap(null);
@@ -190,11 +237,13 @@ console.log("OLOLO: ", this.prevPoint.center);
     });
     console.log(array);
     let pathUtility = new PathLogic();
-    let splines = pathUtility.GetPathLinesFromPolygon(array, 45, 0.001);
+    console.log("ebat, ", this.gridAngle, this.gridStep);
+    let splines = pathUtility.GetPathLinesFromPolygon(array, +this.gridAngle, +this.gridStep);
     console.log(splines);
     let coords = [];
     let order = true;
     this.prevPath = [];
+    this.flightPlan = splines;
     splines.forEach(element => {
       coords = [];
       coords.push({lat: element.StartPoint.X, lng: element.StartPoint.Y});
@@ -207,16 +256,8 @@ console.log("OLOLO: ", this.prevPoint.center);
         strokeWeight: 2
       });
       flightPath.setMap(this.map);
-
-      
-
-      
-      
       this.prevPath.push(flightPath);
     });
-    
-
-    
   }
   
   drawPolygon() {
@@ -262,8 +303,8 @@ console.log("OLOLO: ", this.prevPoint.center);
 
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
-      component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
-      component.droneOverlay.draw();
+      //component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
+      component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
 
     google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
@@ -312,18 +353,18 @@ console.log("OLOLO: ", this.prevPoint.center);
   }
 test() {
   this.USGSOverlay = class extends (google.maps.OverlayView as { new():any}) {
-    bounds_: any;
     image_: any;
     map_: any;
     div_: any;
     rotation_: any;
-    constructor(bounds, image, private map) {
+    gpsPoint_: any;
+    constructor(gps, image, private map) {
         super();
         // Initialize all properties.
-        this.bounds_ = bounds;
         this.image_ = image;
         this.map_ = map;
         this.rotation_ = 0;
+        this.gpsPoint_ = gps;
         // Define a property to hold the image's div. We'll
         // actually create this div upon receipt of the onAdd()
         // method so we'll leave it null for now.
@@ -361,25 +402,19 @@ test() {
         // Retrieve the south-west and north-east coordinates of this overlay
         // in LatLngs and convert them to pixel coordinates.
         // We'll use these coordinates to resize the div.
-        const sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
-        const ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
+        const gp = overlayProjection.fromLatLngToDivPixel(this.gpsPoint_);
         // Resize the image's div to fit the indicated dimensions.
         const div = this.div_;
-        div.style.left = (sw.x - 30) + 'px';
-        div.style.top = (ne.y - 30) + 'px';
+        div.style.left = (gp.x - 30) + 'px';
+        div.style.top = (gp.y - 30) + 'px';
         div.style.width = '60px';
         div.style.height = '60px';
         div.style.transform = "rotate(" + this.rotation_ + "deg)";
-        //console.log(ne.x, ne.y, sw.x, sw.y);
-        /*
-        div.style.width = this.width_ + 'px';
-        div.style.height = this.height_ + 'px'; */
     };
     setPosition(gps, angle) {
-      this.bounds_ = new google.maps.LatLngBounds(
-        new google.maps.LatLng(gps.lat, gps.lng),
-        new google.maps.LatLng(gps.lat, gps.lng));
+      this.gpsPoint_ = new google.maps.LatLng(gps.lat, gps.lng);
       this.rotation_ = angle;
+      this.draw();
     }
     // The onRemove() method will be called automatically from the API if
     // we ever set the overlay's map property to 'null'.
