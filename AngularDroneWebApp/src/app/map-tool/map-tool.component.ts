@@ -32,7 +32,7 @@ export class MapToolComponent implements AfterViewInit {
   prevGpsPoint: any;
   prevPath: Array<any>;
 
-  image = require('src/assets/images/drone.png');
+  image = 'src/assets/images/drone.png';
   USGSOverlay: any;
   droneOverlay: any;
 
@@ -159,7 +159,7 @@ export class MapToolComponent implements AfterViewInit {
       angle = google.maps.geometry.spherical.computeHeading(prevP, currP);
     }
     
-    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, angle + 180);
+    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, angle + 180, gps.batteryLevel, gps.sprayLevel);
     //$.view.overlay.getPanes().overlayLayer.style['zIndex'] = 1001;
 
     if(this.prevPoint)
@@ -321,7 +321,8 @@ console.log("OLOLO: ", this.prevPoint.center);
         this.lastPolygon = event.overlay.getPath().getArray();
         event.overlay.setOptions({
           editable: true,
-          zIndex: 0
+          zIndex: 0,
+          fillOpacity: 0.0,
         });
         this.droneOverlay.setMap(null);
         this.droneOverlay.setMap(component.map);
@@ -368,6 +369,10 @@ test() {
     div_: any;
     rotation_: any;
     gpsPoint_: any;
+    batteryLevel_: any;
+    sprayLevel_: any;
+    batteryDiv_: any;
+    sprayerDiv_: any;
     constructor(gps, image, private map) {
         super();
         // Initialize all properties.
@@ -375,10 +380,14 @@ test() {
         this.map_ = map;
         this.rotation_ = 0;
         this.gpsPoint_ = gps;
+        this.batteryLevel_ = 100;
+        this.sprayLevel_ = 100;
         // Define a property to hold the image's div. We'll
         // actually create this div upon receipt of the onAdd()
         // method so we'll leave it null for now.
         this.div_ = null;
+        this.batteryDiv_ = null;
+        this.sprayerDiv_ = null;
         // Explicitly call setMap on this overlay.
         this.setMap(map);
         this.set
@@ -399,7 +408,48 @@ test() {
         img.style.height = '100%';
         img.style.position = 'absolute';
         img.style.zIndex = '10000';
+        img.id = 'droneId';
         div.appendChild(img);
+
+        const bdiv = document.createElement('div');
+        const sdiv = document.createElement('div');
+
+        bdiv.className = 'statusContainer battery';
+        sdiv.className = 'statusContainer spray';
+        bdiv.style.top = '-15px';
+        sdiv.style.top = '-30px';
+
+        bdiv.style.width = '80px';
+        bdiv.style.border = '2px solid #4b4641';
+        bdiv.style.left = '-12px';
+        bdiv.style.position = 'absolute';
+        bdiv.style.borderRadius = '2px';
+
+        sdiv.style.width = '80px';
+        sdiv.style.border = '2px solid #4b4641';
+        sdiv.style.left = '-12px';
+        sdiv.style.position = 'absolute';
+        sdiv.style.borderRadius = '2px';
+
+
+        const battery = document.createElement('div');
+        battery.style.width = (0.8 * this.batteryLevel_) + 'px';
+        battery.style.height = '8px';
+        battery.style.background = '#f14a42';
+        this.batteryDiv_ = battery;
+
+        const spray = document.createElement('div');
+        spray.style.width = (0.8 * this.sprayLevel_) + 'px';
+        spray.style.height = '8px';
+        spray.style.background = '#4260f1';
+        this.sprayerDiv_ = spray;
+
+        bdiv.appendChild(battery);
+        sdiv.appendChild(spray);
+
+        div.appendChild(bdiv);
+        div.appendChild(sdiv);
+
         this.div_ = div;
         // Add the element to the "overlayLayer" pane.
         const panes = this.getPanes();
@@ -424,10 +474,15 @@ test() {
         div.style.width = '60px';
         div.style.height = '60px';
         div.style.transform = "rotate(" + this.rotation_ + "deg)";
+
+        this.batteryDiv_.style.width = (0.8 * this.batteryLevel_) + 'px';
+        this.sprayerDiv_.style.width = (0.8 * this.sprayLevel_) + 'px';
     };
-    setPosition(gps, angle) {
+    setPosition(gps, angle, battery, spray) {
       this.gpsPoint_ = new google.maps.LatLng(gps.lat, gps.lng);
       this.rotation_ = angle;
+      this.batteryLevel_ = battery;
+      this.sprayLevel_ = spray;
       this.draw();
     }
     // The onRemove() method will be called automatically from the API if

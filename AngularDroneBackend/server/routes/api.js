@@ -19,6 +19,8 @@ let targetPosition = undefined;
 let flightPlan = undefined;
 let planPointIndex = 0;
 let isGoingToStart = true;
+let batteryLevel = 100;
+let sprayLevel = 100;
 
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline')
@@ -64,11 +66,16 @@ io.on("connection", socket => {
     });
     //flightPlan = plan;
     planPointIndex = 0;
+    targetPosition = {
+        lat: flightPlan[0].position.X,
+        lng: flightPlan[0].position.Y
+        };
+    status = 1;
     console.log(flightPlan);
     let lat = 52.461099646230515;
   let lng = 30.953739391214980;
   let angle = 0;
-
+  iteration = 0;
   
 
   emit(lat, lng, angle);
@@ -109,33 +116,10 @@ myMAV.on("ready", function() {
 let onPosition = false;
 
 function move(current, target) {
-    /*var a = Math.abs(current.lat - target.lat);
-    var b = Math.abs(current.lng - target.lng);
-
-    c = Math.sqrt(a*a + b*b);
-
-    var angle = (Math.asin(a/c) / Math.PI) * 180;
-
-    var step = 0.00001 * Math.tan(angle);
-    console.log(angle);
-    return step;*/
-
     let iSpeed = 0.00001;
-
-    //let fDistance = Math.sqrt( (current.lat-target.lat)*(current.lat-target.lat) + (current.lng - target.lng)*(current.lng-target.lng) );
-
     let fRadians = Math.atan( Math.abs(current.lng - target.lng) / Math.abs(current.lat - target.lat) );
-
-    //current.angle =((Math.atan( current.lng - target.lng) / (current.lat - target.lat) ) / Math.PI) * 180;
-    //console.log("ANGLE: ", current.angle);
-
-    // определяем, на сколько нужно изменить позицию Label по осям
     let dX = Math.abs(iSpeed * Math.cos(fRadians));
     let dY = Math.abs(iSpeed * Math.sin(fRadians));
-
-    console.log("Diffs: ", dX, dY);
-
-    // изменение позиции Label
     if ( target.lat < current.lat ) 
     {
       current.lat -= dX;
@@ -149,63 +133,100 @@ function move(current, target) {
     else if ( target.lng > current.lng ) {
       current.lng += dY;
     }
-
     return current;
 }
 
+let batteryDischargeSpeed = 5;
+let sprayDischargeSpeed = 10;
+let iteration = 0;
+let lastPosition = null;
+let basePosition = {
+    lat: 52.461099646230515,
+    lng: 30.953739391214980
+};
+//0 - idle, 1 - working, 2 - going to base, 3 - charging, 4 - finished and going home, 5 - going back to work
+let status = 0;
+let toggleSpray = false;
+
 function emit(lat, lng, angle) {
   setTimeout(() => {
-    //console.log("emitting: ", lat, lng);
-if(targetPosition) {
-  //console.log(lat, targetPosition.lat, lat - targetPosition.lat);
-  onPosition = true;
-
-  if(Math.abs(lat - targetPosition.lat) > 0.00001 || Math.abs(lng - targetPosition.lng) > 0.00001)
-  {
-    let c = move({lat: lat, lng: lng}, targetPosition);
-    lat = c.lat;
-    lng = c.lng;
-    angle = c.angle;
-    onPosition = false;
-  }
-    /*if(Math.abs(lat - targetPosition.lat) > 0.00001) {
-      if(lat > targetPosition.lat) lat -= 0.00001;
-      if(lat < targetPosition.lat) lat += 0.00001;
-      onPosition = false;
+      console.log(status);
+    if(status == 1) {
+        lastPosition = {lat: lat, lng: lng};
     }
-    let step = calculateStep({lat: lat, lng: lng}, targetPosition);
-    if(Math.abs(lng - targetPosition.lng) > 0.00001) {
-      if(lng > targetPosition.lng) lng -= step; //0.00001;
-      if(lng < targetPosition.lng) lng += step; //0.00001;
-      onPosition = false;
-    }*/
-console.log(onPosition);
-    if(onPosition) {
-      if(flightPlan.length <= planPointIndex) {
-          return;
-      }
-      let planElement = flightPlan[planPointIndex];
-      planPointIndex++;
-      
-      targetPosition = {
-        lat: planElement.position.X,
-        lng: planElement.position.Y
-      };
+    if(status == 1 && (batteryLevel < 20 || sprayLevel <= 0)) {
+        status = 2;
+        targetPosition = basePosition;
     }
 
-    io.emit('gpstest', {lat: lat, lng: lng, angle: angle, onPosition: onPosition});
-  } else {
-    if(flightPlan) {
-    targetPosition = {
-      lat: flightPlan[0].position.X,
-      lng: flightPlan[0].position.Y
-    };
-  }
-  }
-    /*lat += 0.0001;
-    lng += 0.0001;*/
-    angle++;
-    if(angle >= 360) angle = 0;
+    if(status == 1 || status == 2) {
+        if(iteration % batteryDischargeSpeed == 0 && batteryLevel > 0) {
+            batteryLevel--;
+        }
+    }
+    if(status == 1) {
+        if(iteration % sprayDischargeSpeed == 0 && sprayLevel > 0) {
+            sprayLevel--;
+        }
+    }
+
+    if (status == 3) {
+        if(iteration % batteryDischargeSpeed == 0 && batteryLevel < 100) {
+            batteryLevel++;
+        }
+        if(iteration % sprayDischargeSpeed == 0 && sprayLevel < 100) {
+            sprayLevel++;
+        }
+        if(batteryLevel == 100 && sprayLevel == 100) {
+            status = 5;
+            targetPosition = lastPosition;
+        }
+
+    }
+
+    if( status == 1 || status == 2 || status == 4 || status == 5) {
+        onPosition = true;
+
+        if(Math.abs(lat - targetPosition.lat) > 0.00001 || Math.abs(lng - targetPosition.lng) > 0.00001)
+        {
+            let c = move({lat: lat, lng: lng}, targetPosition);
+            lat = c.lat;
+            lng = c.lng;
+            angle = c.angle;
+            onPosition = false;
+        }
+
+        if(onPosition) {
+            if(status == 4) {
+                status = 0;
+                return;
+            }
+            if(status == 2) {
+                status = 3;
+            }
+            if(status == 5) {
+                status = 1;
+            }
+            if(status == 1) {
+                if(flightPlan.length <= planPointIndex) {
+                    targetPosition = basePosition; 
+                    status = 4;
+                } else {
+                    targetPosition = {
+                    lat: flightPlan[planPointIndex].position.X,
+                    lng: flightPlan[planPointIndex].position.Y
+                    };
+                    toggleSpray = flightPlan[planPointIndex].sprayerOn;
+                    planPointIndex++;
+                }
+            }
+          }     
+          
+    }
+    io.emit('gpstest', {lat: lat, lng: lng, angle: angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray});
+    
+
+    iteration++;
     emit(lat, lng, angle);
   }, 100);
 }

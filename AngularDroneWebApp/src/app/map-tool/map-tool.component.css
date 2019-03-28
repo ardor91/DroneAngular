@@ -6,3 +6,12 @@
     height: 20px;
     width: 20px;
   }
+
+.statusContainer {
+    width: 80px;
+    border: 2px solid #4b4641;
+    left: -11px;
+    top: -15px;
+    position: absolute;
+    border-radius: 2px;
+}
