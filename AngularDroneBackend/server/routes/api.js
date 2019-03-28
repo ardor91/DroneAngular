@@ -140,6 +140,7 @@ let batteryDischargeSpeed = 5;
 let sprayDischargeSpeed = 10;
 let iteration = 0;
 let lastPosition = null;
+let lastTargetPosition = null;
 let basePosition = {
     lat: 52.461099646230515,
     lng: 30.953739391214980
@@ -205,8 +206,9 @@ function emit(lat, lng, angle) {
                 status = 3;
             }
             if(status == 5) {
+                targetPosition = lastTargetPosition;
                 status = 1;
-            }
+            } else
             if(status == 1) {
                 if(flightPlan.length <= planPointIndex) {
                     targetPosition = basePosition; 
@@ -216,6 +218,7 @@ function emit(lat, lng, angle) {
                     lat: flightPlan[planPointIndex].position.X,
                     lng: flightPlan[planPointIndex].position.Y
                     };
+                    lastTargetPosition = targetPosition;
                     toggleSpray = flightPlan[planPointIndex].sprayerOn;
                     planPointIndex++;
                 }
