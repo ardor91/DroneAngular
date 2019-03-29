@@ -3,7 +3,7 @@ const router = express.Router();
 
 const mavlink = require('mavlink');
 
-let myMAV = new mavlink(0,0);
+let myMAV = new mavlink(1,1);
 
 
 
@@ -81,9 +81,33 @@ io.on("connection", socket => {
   emit(lat, lng, angle);
     //targetPosition = position;
   });
+
+  socket.on('armCopter', (plan) => {
+    myMAV.createMessage("COMMAND_LONG",
+          { 
+              //MAV_CMD_DO_SET_MODE 176
+              //MAV_MODE_GUIDED_ARMED 216
+              'param1': 216,
+              'param2': 0,
+              'param3': 0,
+              'param4': 0,
+              'param5': 0,
+              'param6': 0,
+              'param7': 0,
+              'command': 176,
+              'target_system': 1,
+              'target_component': 1,
+              'confirmation': 1
+          },
+          function(message) {
+            console.log("MAv response: ", message);
+        });
+  });
 });
 
-let mavport = new SerialPort("COM12", {baudRate: 57600, autoOpen: true});
+
+
+let mavport = new SerialPort("COM10", {baudRate: 115200, autoOpen: true});
 myMAV.on("ready", function() {
   //parse incoming serial data
   console.log("Mavlink ready");

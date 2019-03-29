@@ -100,6 +100,10 @@ export class MapToolComponent implements AfterViewInit {
     if(!this.flightPlan) return;
     this.socketService.sendFlightPlan(this.flightPlan);
   }
+
+  armCopter() {
+    this.socketService.armCopter();
+  }
  
   getPorts(): void {
     this.apiService.getPorts()

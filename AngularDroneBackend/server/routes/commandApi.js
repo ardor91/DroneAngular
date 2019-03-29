@@ -10,7 +10,7 @@ let latestAttitudeState = null;
 let latestGpsState = null;
 
 firstClient.subscribeToAttitude((data) => {
-    latestAttitudeState = data;
+    latestAttitudeState = data;    
 })
 firstClient.subscribeToGps((data) => {
     latestGpsState = data;

@@ -42,4 +42,17 @@ module.exports = class MavlinkClient {
     subscribeToAttitude(subscriber) {
         this._attitudeSubscribers.push(subscriber);
     }
+
+    armCopter() {
+        this._mavlinkObject.createMessage("COMMAND_LONG",
+        { 
+            //MAV_CMD_DO_SET_MODE 176
+            //MAV_MODE_GUIDED_ARMED 216
+            'param1': 216,
+            'command': 176,
+            'target_system': 1,
+            'target_component': 1,
+            'confirmation': 1
+        });
+    }
 }

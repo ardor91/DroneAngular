@@ -19,4 +19,8 @@ export class SocketService {
   sendFlightPlan(plan) {
     this.socket.emit('flightplan', plan);
   }
+
+  armCopter() {
+    this.socket.emit('armCopter', 1);
+  }
 }
