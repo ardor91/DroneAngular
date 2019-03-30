@@ -10,6 +10,12 @@ export class SocketService {
 
   testcoord = this.socket.fromEvent<string>('gpstest');
 
+  heartbeat = this.socket.fromEvent<string>('heartbeat');
+
+  prearm = this.socket.fromEvent<string>('prearm');
+
+  attitude = this.socket.fromEvent<string>('attitude');
+
   constructor(private socket: Socket) { }
 
   setNewPosition(gps) {
@@ -22,5 +28,9 @@ export class SocketService {
 
   armCopter() {
     this.socket.emit('armCopter', 1);
+  }
+
+  rebootSystem() {
+    this.socket.emit('rebootSystem', 1);
   }
 }

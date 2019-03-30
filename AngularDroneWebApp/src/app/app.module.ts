@@ -14,6 +14,10 @@ import {HttpClientModule} from '@angular/common/http';
 import {MatSelectModule} from '@angular/material/select';
 import {MatButtonModule} from '@angular/material/button';
 import {MatSliderModule} from '@angular/material/slider';
+import {MatCardModule} from '@angular/material/card';
+import {MatDividerModule} from '@angular/material/divider';
+import {MatListModule} from '@angular/material/list';
+import {MatSnackBarModule} from '@angular/material/snack-bar';
 
 const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
 
@@ -32,6 +36,10 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
     HttpClientModule,
     MatButtonModule,
     MatSliderModule,
+    MatCardModule,
+    MatDividerModule,
+    MatListModule,
+    MatSnackBarModule,
     SocketIoModule.forRoot(config)
   ],
   providers: [{ provide: HAMMER_GESTURE_CONFIG, useClass: GestureConfig },],

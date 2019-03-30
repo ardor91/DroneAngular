@@ -7,6 +7,8 @@ module.exports = class MavlinkClient {
         this._mavlinkObject = new mavlink(groundStationId, deviceId);
         this._gpsSubscribers = [];
         this._attitudeSubscribers = [];
+        this._heartbeatSubscribers = [];
+        this._prearmSubscribers = [];
 
         this._mavport = new SerialPort(serialPort, { baudRate: baudRate, autoOpen: true });
         
@@ -21,6 +23,24 @@ module.exports = class MavlinkClient {
                 this._attitudeSubscribers.forEach(subscriber => {
                     subscriber(fields);
                 });
+            });
+
+            //listen for Heartbeat status messages
+            this._mavlinkObject.on("HEARTBEAT", (message, fields) => {
+                this._heartbeatSubscribers.forEach(subscriber => {
+                    subscriber(fields);
+                });
+            });
+
+            //listen for Status messages
+            this._mavlinkObject.on("STATUSTEXT", (message, fields) => {
+                let status_text = fields.text;
+                let PRE_ARM = 'PreArm';
+                if (status_text.indexOf(PRE_ARM) >= 0) {
+                    this._prearmSubscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
+                }                
             });
 
             //listen for GPS messages
@@ -43,6 +63,14 @@ module.exports = class MavlinkClient {
         this._attitudeSubscribers.push(subscriber);
     }
 
+    subscribeToHeartbeat(subscriber) {
+        this._heartbeatSubscribers.push(subscriber);
+    }
+
+    subscribeToPreArmStatus(subscriber) {
+        this._prearmSubscribers.push(subscriber);
+    }
+
     armCopter() {
         this._mavlinkObject.createMessage("COMMAND_LONG",
         { 
@@ -54,5 +82,28 @@ module.exports = class MavlinkClient {
             'target_component': 1,
             'confirmation': 1
         });
+    }
+
+    rebootSystems(autopilot, computer) {
+        this._mavlinkObject.createMessage("COMMAND_LONG",
+        { 
+            //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
+            //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
+            //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
+            'param1': 1,
+            'param2': 1,
+            'param3': 0,
+            'param4': 0,
+            'param5': 0,
+            'param6': 0,
+            'param7': 0,
+            'command': 246,
+            'target_system': 1,
+            'target_component': 1,
+            'confirmation': 1
+        },
+        (message) => {
+            this._mavport.write(message.buffer);
+      });
     }
 }

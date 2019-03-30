@@ -1,3 +1,102 @@
+<h1 *ngIf="prearm">{{prearm.text}}</h1>
+<div class="cardsContainer">
+<mat-card class="heartbeatStatus" *ngIf="heartbeat">
+  <mat-card-header>
+    <mat-card-title>Heartbeat</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <mat-list>
+      <mat-list-item>
+        <span class="title">Type</span>
+        <span class="fill-space"></span>
+        <span class="value">{{heartbeat.type}}</span>  
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
+        <span class="title">Autopilot</span>
+        <span class="fill-space"></span>
+        <span class="value">{{heartbeat.autopilot}}</span>  
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
+        <span class="title">Base mode</span>
+        <span class="fill-space"></span>
+        <span class="value">{{heartbeat.base_mode}}</span>  
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
+        <span class="title">Custom mode</span>
+        <span class="fill-space"></span>
+        <span class="value">{{heartbeat.custom_mode}}</span>  
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
+        <span class="title">Mavlink version</span>
+        <span class="fill-space"></span>
+        <span class="value">{{heartbeat.mavlink_version}}</span>  
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
+        <span class="title">System status</span>
+        <span class="fill-space"></span>
+        <span class="value">{{getSystemStatus(heartbeat.system_status)}}</span>  
+      </mat-list-item>
+    </mat-list>
+  </mat-card-content>
+</mat-card>
+
+
+<mat-card class="attitude" *ngIf="attitude">
+    <mat-card-header>
+      <mat-card-title>Attitude</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-list>
+        <mat-list-item>
+          <span class="title">Time from Boot</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.time_boot_ms}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+          <span class="title">Roll</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.roll}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+          <span class="title">Pitch</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.pitch}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+          <span class="title">Yaw</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.yaw}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+          <span class="title">Roll speed</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.rollspeed}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+          <span class="title">Pitch speed</span>
+          <span class="fill-space"></span>
+          <span class="value">{{attitude.pitchspeed}}</span>  
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        <mat-list-item>
+            <span class="title">Yaw speed</span>
+            <span class="fill-space"></span>
+            <span class="value">{{attitude.yawspeed}}</span>  
+          </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+</div>
 <mat-form-field>
   <mat-select placeholder="Ports available" [(ngModel)]="selectedPort" name="portsSelect">
     <mat-option *ngFor="let port of availablePorts" [value]="port">
@@ -37,5 +136,7 @@
 <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
 
 <button (click)="armCopter()"  mat-raised-button>Arm</button>
+
+<button (click)="reboot()"  mat-raised-button>Reboot</button>
 
 <div style="margin-top: 10px" id="map"></div>

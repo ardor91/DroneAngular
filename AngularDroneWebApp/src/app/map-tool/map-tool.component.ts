@@ -5,6 +5,7 @@ import { Observable, Subscription } from 'rxjs';
 import { SocketService } from 'src/app/socket.service';
 import { ApiService } from 'src/app/api.service';
 import { isObject } from 'util';
+import {MatSnackBar} from '@angular/material';
 
 declare var google: any;
 
@@ -51,9 +52,13 @@ export class MapToolComponent implements AfterViewInit {
   value = 0;
   vertical = false;
 
+  heartbeat: any;
+  attitude: any;
+  prearm: any;
+
   flightPlan: Array<any>;
 
-  constructor(private socketService: SocketService, private apiService: ApiService) {
+  constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar) {
   }
 
   ngAfterViewInit() {
@@ -71,8 +76,10 @@ export class MapToolComponent implements AfterViewInit {
     this.pointsArray = [];
 
     this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2)});
+    this.socketService.heartbeat.subscribe(data => {this.heartbeat = data; });
+    this.socketService.prearm.subscribe(data => {this.prearm = data; this.openSnackBar(this.prearm.text, '');});
 
-    
+    this.socketService.attitude.subscribe(data => {this.attitude = data; });
   }
 
   stepChanged() {
@@ -95,6 +102,12 @@ export class MapToolComponent implements AfterViewInit {
     return value * 1000000;
   }
 
+  openSnackBar(message: string, action: string) {
+    this.snackBar.open(message, action, {
+      duration: 10000,
+    });
+  }
+
 
   startWork() {
     if(!this.flightPlan) return;
@@ -103,6 +116,10 @@ export class MapToolComponent implements AfterViewInit {
 
   armCopter() {
     this.socketService.armCopter();
+  }
+
+  reboot() {
+    this.socketService.rebootSystem();
   }
  
   getPorts(): void {
@@ -496,6 +513,83 @@ test() {
         this.div_ = null;
     };
 };
+}
+
+
+getSystemStatus(value) {
+  switch(value) { 
+    case 0: { 
+       return "Uninitialized system, state is unknown";
+    } 
+    case 1: { 
+       return "System is booting up";
+    }
+    case 2: { 
+      return "System is calibrating and not flight-ready";
+    } 
+    case 3: { 
+    return "System is grounded and on standby"; 
+    } 
+    case 4: { 
+      return "Motors are engaged"; 
+    } 
+    case 5: { 
+      return "Critical state"; 
+    } 
+    case 6: { 
+      return "Emergency! Lost control!"; 
+    } 
+    case 7: { 
+      return "Power down sequence initialized"; 
+    } 
+    case 8: { 
+      return "System terminating"; 
+    }  
+    default: { 
+        return "Unknown" 
+    } 
+ } 
+}
+
+getSystemMode(value) {
+  switch(value) { 
+    case 128: { 
+       return "Uninitialized system, state is unknown";
+    } 
+    case 64: { 
+       return "System is booting up";
+    }
+    case 32: { 
+      return "System is calibrating and not flight-ready";
+    } 
+    case 16: { 
+    return "System is grounded and on standby"; 
+    } 
+    case 8: { 
+      return "Motors are engaged"; 
+    } 
+    case 4: { 
+      return "Critical state"; 
+    } 
+    case 2: { 
+      return "Emergency! Lost control!"; 
+    } 
+    case 1: { 
+      return "Power down sequence initialized"; 
+    }  
+    default: { 
+        return "Unknown" 
+    } 
+ } 
+  
+  /*128	MAV_MODE_FLAG_SAFETY_ARMED	0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly. Additional note: this flag is to be ignore when sent in the command MAV_CMD_DO_SET_MODE and MAV_CMD_COMPONENT_ARM_DISARM shall be used instead. The flag can still be used to report the armed state.
+64	MAV_MODE_FLAG_MANUAL_INPUT_ENABLED	0b01000000 remote control input is enabled.
+32	MAV_MODE_FLAG_HIL_ENABLED	0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational.
+16	MAV_MODE_FLAG_STABILIZE_ENABLED	0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however further control inputs to move around.
+8	MAV_MODE_FLAG_GUIDED_ENABLED	0b00001000 guided mode enabled, system flies waypoints / mission items.
+4	MAV_MODE_FLAG_AUTO_ENABLED	0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not, depends on the actual implementation.
+2	MAV_MODE_FLAG_TEST_ENABLED	0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.
+1	MAV_MODE_FLAG_CUSTOM_MODE_ENABLED	0b00000001 Reserved for future use.*/
 }
   
 }

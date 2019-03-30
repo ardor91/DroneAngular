@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const mavlink = require('mavlink');
+const MavlinkClient = require('../services/mavlinkClient');
 
 let myMAV = new mavlink(1,1);
 
@@ -11,6 +12,23 @@ const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
 
 const LocalStorage = require('node-localstorage').LocalStorage,
 localStorage = new LocalStorage('./scratch');
+
+
+let client = new MavlinkClient('COM14', 115200, 1, 1);
+
+client.subscribeToHeartbeat((data) => {
+    console.log(data);
+    io.emit('heartbeat', data);
+});
+
+client.subscribeToPreArmStatus((data) => {
+    //console.log(data);
+    io.emit('prearm', data);
+});
+
+client.subscribeToAttitude((data) => {
+    io.emit('attitude', data);
+});
 
 let parser = undefined;
 let port = undefined;
@@ -100,14 +118,20 @@ io.on("connection", socket => {
               'confirmation': 1
           },
           function(message) {
-            console.log("MAv response: ", message);
+            mavport.write(message.buffer);
+            //myMAV.parse(message);
+            //console.log("MAv response: ", message);
         });
+  });
+
+  socket.on('rebootSystem', (params) => {
+    client.rebootSystems(0, 0);
   });
 });
 
 
 
-let mavport = new SerialPort("COM10", {baudRate: 115200, autoOpen: true});
+let mavport = new SerialPort("COM14", {baudRate: 115200, autoOpen: true});
 myMAV.on("ready", function() {
   //parse incoming serial data
   console.log("Mavlink ready");
@@ -126,6 +150,13 @@ myMAV.on("ready", function() {
       //console.log(message.payload.toString());
       //console.log(message.buffer.toString());
   });
+  myMAV.on("COMMAND_LONG", function(message, fields) {
+    console.log("comlong: : ", fields);
+    //io.emit('gpstest', {lat: (fields.lat / 10000000), lng: (fields.lon / 10000000), angle: 60}); //524812088
+    //console.log(message.payload.toString());
+    //console.log(message.buffer.toString());
+  });
+  
 
   let lat = 52.461099646230515;
   let lng = 30.953739391214980;
