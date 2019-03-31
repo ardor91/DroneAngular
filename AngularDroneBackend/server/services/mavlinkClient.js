@@ -48,9 +48,6 @@ module.exports = class MavlinkClient {
                 this._gpsSubscribers.forEach(subscriber => {
                     subscriber(fields);
                 });
-                //io.emit('gpstest', {lat: (fields.lat / 10000000), lng: (fields.lon / 10000000), angle: 60}); //524812088
-                //console.log(message.payload.toString());
-                //console.log(message.buffer.toString());
             });
         }); 
     }
@@ -72,69 +69,53 @@ module.exports = class MavlinkClient {
     }
 
     armCopter() {
-        this._mavlinkObject.createMessage("COMMAND_LONG",
-        { 
-            //MAV_CMD_DO_SET_MODE 176
-            //MAV_MODE_GUIDED_ARMED 216
-            'param1': 1,
-            'param2': 0,
-            'param3': 0,
-            'param4': 0,
-            'param5': 0,
-            'param6': 0,
-            'param7': 0,
-            'command': 400,
-            'target_system': 1,
-            'target_component': 1,
-            'confirmation': 1
-        },
-        (message) => {
-            this._mavport.write(message.buffer);
-        });
+        //MAV_CMD_COMPONENT_ARM_DISARM  400
+        //1: 0 - disarm, 1 - arm
+        this.sendCommandLong(1, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1); 
     }
 
     disarmCopter() {
+        //MAV_CMD_COMPONENT_ARM_DISARM  400
+        //1: 0 - disarm, 1 - arm
+        this.sendCommandLong(0, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1);        
+    }
+
+    rebootSystems(autopilot, computer) {
+        //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
+        //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
+        //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
+        this.sendCommandLong(1, 1, 0, 0, 0, 0, 0, 246, 1, 1, 1);        
+    }
+
+    takeOff(altitude) {
+        this.sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
+    }
+
+    land(lat, lng, alt) {
+        this.sendCommandLong(0, 0, 0, 0, lat, lng, alt, 21, 1);
+    }
+
+    navToWaypoint(holdTime = 0, radius = 1, lat, lng, alt) {
+        this.sendCommandLong(holdTime, radius, 0, 0, lat, lng, alt, 16, 1);
+    }
+
+    sendCommandLong(param1, param2, param3, param4, param5, param6, param7, command, confirmation) {
         this._mavlinkObject.createMessage("COMMAND_LONG",
         { 
-            //MAV_CMD_DO_SET_MODE 176
-            //MAV_MODE_GUIDED_ARMED 216
-            'param1': 0,
-            'param2': 0,
-            'param3': 0,
-            'param4': 0,
-            'param5': 0,
-            'param6': 0,
-            'param7': 0,
-            'command': 400,
+            'param1': param1,
+            'param2': param2,
+            'param3': param3,
+            'param4': param4,
+            'param5': param5,
+            'param6': param6,
+            'param7': param7,
+            'command': command,
             'target_system': 1,
             'target_component': 1,
-            'confirmation': 1
+            'confirmation': confirmation
         },
         (message) => {
             this._mavport.write(message.buffer);
         });
-    }
-
-    rebootSystems(autopilot, computer) {
-        this._mavlinkObject.createMessage("COMMAND_LONG",
-        { 
-            //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
-            //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
-            //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
-            'param1': 1,
-            'param2': 1,
-            'param3': 0,
-            'param4': 0,
-            'param5': 0,
-            'param6': 0,
-            'param7': 0,
-            'command': 246,
-            'target_system': 1,
-            'target_component': 1,
-            'confirmation': 1
-        },
-        (message) => {
-            this._mavport.write(message.buffer);
-      });
     }
 }
