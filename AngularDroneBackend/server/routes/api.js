@@ -30,6 +30,10 @@ client.subscribeToAttitude((data) => {
     io.emit('attitude', data);
 });
 
+client.subscribeToGps((data) => {
+  io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: 60});
+});
+
 let parser = undefined;
 let port = undefined;
 
@@ -115,42 +119,7 @@ io.on("connection", socket => {
 
 
 
-let mavport = new SerialPort("COM14", {baudRate: 115200, autoOpen: true});
-myMAV.on("ready", function() {
-  //parse incoming serial data
-  console.log("Mavlink ready");
-  mavport.on('data', function(data) {
-      //console.log("mavdata: ", data);
-      //let json = JSON.stringify(data);
-      //console.log(json);
-      myMAV.parse(data);
-      //console.log("LOL: ", msg);
-  });
-  
-  //listen for messages
-  myMAV.on("GPS_RAW_INT", function(message, fields) {
-      console.log("mavparsedmessage: ", fields);
-      io.emit('gpstest', {lat: (fields.lat / 10000000), lng: (fields.lon / 10000000), angle: 60}); //524812088
-      //console.log(message.payload.toString());
-      //console.log(message.buffer.toString());
-  });
-  myMAV.on("COMMAND_LONG", function(message, fields) {
-    console.log("comlong: : ", fields);
-    //io.emit('gpstest', {lat: (fields.lat / 10000000), lng: (fields.lon / 10000000), angle: 60}); //524812088
-    //console.log(message.payload.toString());
-    //console.log(message.buffer.toString());
-  });
-  
-
-  let lat = 52.461099646230515;
-  let lng = 30.953739391214980;
-  let angle = 0;
-
-  
-
-  //emit(lat, lng, angle);
-
-});
+//let mavport = new SerialPort("COM14", {baudRate: 115200, autoOpen: true});
 
 let onPosition = false;
 
