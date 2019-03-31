@@ -1,6 +1,5 @@
-<h1 *ngIf="prearm">{{prearm.text}}</h1>
 <div class="cardsContainer">
-<mat-card class="heartbeatStatus" *ngIf="heartbeat">
+<mat-card class="flex heartbeatStatus" *ngIf="heartbeat">
   <mat-card-header>
     <mat-card-title>Heartbeat</mat-card-title>
   </mat-card-header>
@@ -46,7 +45,7 @@
 </mat-card>
 
 
-<mat-card class="attitude" *ngIf="attitude">
+<mat-card class="flex attitude" *ngIf="attitude">
     <mat-card-header>
       <mat-card-title>Attitude</mat-card-title>
     </mat-card-header>
@@ -96,6 +95,32 @@
       </mat-list>
     </mat-card-content>
   </mat-card>
+
+
+  <mat-card class="flex prearm" *ngIf="preArmMessages && preArmMessages.length > 0">
+    <mat-card-header>
+      <mat-card-title>Pre Arm</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-list>
+        <ng-container *ngFor="let message of preArmMessages">
+        <mat-list-item>
+          <span class="title">{{message.message}}</span>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+      </ng-container>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="flex ">
+      <mat-card-header>
+          <mat-card-title>Attitude screen</mat-card-title>
+        </mat-card-header>
+      <app-attitude roll="{{roll}}" pitch="{{pitch}}" yaw="{{yaw}}" style="width: 600px; height: 600px"></app-attitude>
+  </mat-card>
+
+
 </div>
 <mat-form-field>
   <mat-select placeholder="Ports available" [(ngModel)]="selectedPort" name="portsSelect">

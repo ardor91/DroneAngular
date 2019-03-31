@@ -76,11 +76,42 @@ module.exports = class MavlinkClient {
         { 
             //MAV_CMD_DO_SET_MODE 176
             //MAV_MODE_GUIDED_ARMED 216
-            'param1': 216,
-            'command': 176,
+            'param1': 1,
+            'param2': 0,
+            'param3': 0,
+            'param4': 0,
+            'param5': 0,
+            'param6': 0,
+            'param7': 0,
+            'command': 400,
             'target_system': 1,
             'target_component': 1,
             'confirmation': 1
+        },
+        (message) => {
+            this._mavport.write(message.buffer);
+        });
+    }
+
+    disarmCopter() {
+        this._mavlinkObject.createMessage("COMMAND_LONG",
+        { 
+            //MAV_CMD_DO_SET_MODE 176
+            //MAV_MODE_GUIDED_ARMED 216
+            'param1': 0,
+            'param2': 0,
+            'param3': 0,
+            'param4': 0,
+            'param5': 0,
+            'param6': 0,
+            'param7': 0,
+            'command': 400,
+            'target_system': 1,
+            'target_component': 1,
+            'confirmation': 1
+        },
+        (message) => {
+            this._mavport.write(message.buffer);
         });
     }
 

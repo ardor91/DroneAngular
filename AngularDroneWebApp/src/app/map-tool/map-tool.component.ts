@@ -15,6 +15,11 @@ declare var google: any;
   styleUrls: ['./map-tool.component.css']
 })
 export class MapToolComponent implements AfterViewInit {
+
+  roll = 0;
+  pitch = 0;
+  yaw = 0;
+
   map: any;
   drawingManager: any;
   lastPolygon: any;
@@ -58,6 +63,8 @@ export class MapToolComponent implements AfterViewInit {
 
   flightPlan: Array<any>;
 
+  preArmMessages: Array<object>;
+
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar) {
   }
 
@@ -74,12 +81,38 @@ export class MapToolComponent implements AfterViewInit {
   ngOnInit() {
     this.getPorts();
     this.pointsArray = [];
+    this.preArmMessages = [];
 
     this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2)});
     this.socketService.heartbeat.subscribe(data => {this.heartbeat = data; });
-    this.socketService.prearm.subscribe(data => {this.prearm = data; this.openSnackBar(this.prearm.text, '');});
+    this.socketService.prearm.subscribe(data => {this.prearm = data; this.managePrearmMessages(data);});
 
-    this.socketService.attitude.subscribe(data => {this.attitude = data; });
+    this.socketService.attitude.subscribe(data => {this.attitude = data; this.changeAttitude(data); });
+  }
+
+  managePrearmMessages(data) {
+    let currTimestamp = Date.now() / 1000;
+    this.preArmMessages.push({
+      message: data.text,
+      timestamp: currTimestamp
+    });
+    let tempArray = [];
+    this.preArmMessages.forEach((message) => {
+      //console.log("diff: ", currTimestamp - message.timestamp);
+      if((currTimestamp - message.timestamp) < 25 ) {
+
+        tempArray.push(message);
+      }
+    });
+    this.preArmMessages = tempArray;
+  }
+
+  changeAttitude(data) {
+    if(data) {
+      this.roll = data.roll;
+      this.yaw = data.yaw;
+      this.pitch = data.pitch;
+    }
   }
 
   stepChanged() {

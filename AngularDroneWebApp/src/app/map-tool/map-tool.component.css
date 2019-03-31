@@ -34,3 +34,7 @@
 .cardsContainer {
     display: flex;
 }
+
+.flex {
+    margin: 4px;
+}

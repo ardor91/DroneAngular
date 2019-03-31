@@ -101,27 +101,11 @@ io.on("connection", socket => {
   });
 
   socket.on('armCopter', (plan) => {
-    myMAV.createMessage("COMMAND_LONG",
-          { 
-              //MAV_CMD_DO_SET_MODE 176
-              //MAV_MODE_GUIDED_ARMED 216
-              'param1': 216,
-              'param2': 0,
-              'param3': 0,
-              'param4': 0,
-              'param5': 0,
-              'param6': 0,
-              'param7': 0,
-              'command': 176,
-              'target_system': 1,
-              'target_component': 1,
-              'confirmation': 1
-          },
-          function(message) {
-            mavport.write(message.buffer);
-            //myMAV.parse(message);
-            //console.log("MAv response: ", message);
-        });
+    client.armCopter();
+  });
+
+  socket.on('disarmCopter', (plan) => {
+    client.disarmCopter();
   });
 
   socket.on('rebootSystem', (params) => {

@@ -18,6 +18,7 @@ import {MatCardModule} from '@angular/material/card';
 import {MatDividerModule} from '@angular/material/divider';
 import {MatListModule} from '@angular/material/list';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
+import { AttitudeComponent } from './attitude/attitude.component';
 
 const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
 
@@ -25,7 +26,8 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
   declarations: [
     AppComponent,
     MapToolComponent,
-    TopMenuComponent
+    TopMenuComponent,
+    AttitudeComponent
   ],
   imports: [
     BrowserAnimationsModule,
