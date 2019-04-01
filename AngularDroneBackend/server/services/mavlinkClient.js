@@ -14,6 +14,8 @@ module.exports = class MavlinkClient {
         this._attitudeSubscribers = [];
         this._heartbeatSubscribers = [];
         this._prearmSubscribers = [];
+        this._batteryStatusSibscribers = [];
+        this._homePositionSubscribers = [];
 
         this._createConnectClient();
     }
@@ -59,6 +61,20 @@ module.exports = class MavlinkClient {
                     subscriber(fields);
                 });
             });
+
+            // Listen for Battery status messages
+            this._mavlinkObject.on("BATTERY_STATUS", (message, fields) => {
+                this._batteryStatusSibscribers.forEach(subscriber => {
+                    subscriber(fields);
+                });
+            });
+
+            // Listen for Home position status messages
+            this._mavlinkObject.on("HOME_POSITION", (message, fields) => {
+                this._batteryStatusSibscribers.forEach(subscriber => {
+                    subscriber(fields);
+                });
+            });
         }); 
     }
 
@@ -87,6 +103,10 @@ module.exports = class MavlinkClient {
 
     subscribeToPreArmStatus(subscriber) {
         this._prearmSubscribers.push(subscriber);
+    }
+
+    subscribeToBatteryStatus(subscriber) {
+        this._batteryStatusSibscribers.push(subscriber);
     }
 
     armCopter() {
@@ -134,12 +154,40 @@ module.exports = class MavlinkClient {
     //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE
     
     //MAV_CMD_DO_CHANGE_SPEED 178  1: 0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed
-    //MAV_CMD_DO_SET_HOME 179 1:Use current (1=use current location, 0=use specified location) 5-7: lat, lng, alt
+    
     //MAV_CMD_DO_SET_SERVO 183 1: servo nmb  2: PWM microseconds
-    //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 
     //MAV_CMD_DO_PAUSE_CONTINUE 193  1: 0=pause 1=continue
+
+    //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 
+    setAltitude(alt = 10) {
+        this._sendCommandLong(alt, 0, 0, 0, 0, 0, 0, 186, 1);
+    }
+
+    //MAV_CMD_DO_SET_HOME 179 1:Use current (1=use current location, 0=use specified location) 5-7: lat, lng, alt
+    setHomePosition(lat = 0, lng = 0, alt = 10) {
+        this._sendCommandLong((!lat && !lng) ? 1 : 0, 0, 0, 0, lat, lng, alt, 179, 1);
+    }
+
     //MAV_CMD_GET_HOME_POSITION 410
+    async getHomePosition() {
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 410, 1);
+        let home = await new Promise((resolve, reject) => {
+            this._homePositionSubscribers.push((fields) => {
+                resolve(fields);
+            });
+        });
+
+        this._homePositionSubscribers = [];
+
+        return home;
+    }
+
     //MAV_CMD_REQUEST_MESSAGE 512 1: messageID
+    // Please get messageId from official mavlink documentation:
+    // https://mavlink.io/en/messages/common.html#mavlink-messages
+    requestMessage(messageId) {
+        this._sendCommandLong(messageId, 0, 0, 0, 0, 0, 0, 512, 1);
+    }
 
     _sendCommandLong(param1, param2, param3, param4, param5, param6, param7, command, confirmation) {
         this._mavlinkObject.createMessage("COMMAND_LONG",
