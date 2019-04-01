@@ -19,6 +19,8 @@ import {MatDividerModule} from '@angular/material/divider';
 import {MatListModule} from '@angular/material/list';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import { AttitudeComponent } from './attitude/attitude.component';
+import {MatDialogModule} from '@angular/material/dialog';
+import { SelectPointDialogComponent } from './map-tool/select-point-dialog/select-point-dialog.component';
 
 const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
 
@@ -27,7 +29,8 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
     AppComponent,
     MapToolComponent,
     TopMenuComponent,
-    AttitudeComponent
+    AttitudeComponent,
+    SelectPointDialogComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -42,6 +45,7 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
     MatDividerModule,
     MatListModule,
     MatSnackBarModule,
+    MatDialogModule,
     SocketIoModule.forRoot(config)
   ],
   providers: [{ provide: HAMMER_GESTURE_CONFIG, useClass: GestureConfig },],

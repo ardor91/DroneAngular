@@ -6,6 +6,8 @@ import { SocketService } from 'src/app/socket.service';
 import { ApiService } from 'src/app/api.service';
 import { isObject } from 'util';
 import {MatSnackBar} from '@angular/material';
+import {MatDialog} from '@angular/material';
+import { SelectPointDialogComponent } from './select-point-dialog/select-point-dialog.component';
 
 declare var google: any;
 
@@ -70,7 +72,7 @@ export class MapToolComponent implements AfterViewInit {
 
   customHomePositionMarker: any;
 
-  constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar) {
+  constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
   }
 
   ngAfterViewInit() {
@@ -405,6 +407,11 @@ console.log("OLOLO: ", this.prevPoint.center);
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
 
+      const dialogRef = component.dialog.open(SelectPointDialogComponent);
+
+      dialogRef.afterClosed().subscribe(result => {
+        console.log(`Dialog result: ${result}`);
+      });
       // component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
       // component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
