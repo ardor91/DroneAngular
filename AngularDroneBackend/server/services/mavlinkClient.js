@@ -117,17 +117,17 @@ module.exports = class MavlinkClient {
 
     //MAV_CMD_NAV_RETURN_TO_LAUNCH 20
     returnToLaunch() {
-        this.sendCommandLong(0, 0, 0, 0, 0, 0, 0, 20, 1);
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 20, 1);
     }
 
     //MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT 30
     continueAndChangeAltitude(mode = 0, alt) {
-        this.sendCommandLong(mode, 0, 0, 0, 0, 0, alt, 30, 1);
+        this._sendCommandLong(mode, 0, 0, 0, 0, 0, alt, 30, 1);
     }
 
     //MAV_CMD_NAV_SPLINE_WAYPOINT 82
     setSplineWaypoint(lat, lng, alt) {
-        this.sendCommandLong(0, 0, 0, 0, lat, lng, alt, 82, 1);
+        this._sendCommandLong(0, 0, 0, 0, lat, lng, alt, 82, 1);
     }
 
     //MAV_CMD_NAV_GUIDED_ENABLE 92
