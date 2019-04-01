@@ -19,8 +19,8 @@ export class ApiService {
     return this.http.get(this.apiUrl + '/ports');
   }
 
-  startListening(port: string) {
+  startListening(port: string, baud: string) {
     console.log("Service: ", port, " received");
-    return this.http.put(this.apiUrl + '/ports', {port: port}, httpOptions);
+    return this.http.put(this.apiUrl + '/ports', {port: port, baud: baud}, httpOptions);
   }
 }

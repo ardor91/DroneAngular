@@ -26,6 +26,7 @@ export class MapToolComponent implements AfterViewInit {
 
   availablePorts: any;
   selectedPort: string;
+  selectedBaud: string;
   newGps: string;
   newGps2: string;
 
@@ -60,10 +61,13 @@ export class MapToolComponent implements AfterViewInit {
   heartbeat: any;
   attitude: any;
   prearm: any;
+  home_position: any;
 
   flightPlan: Array<any>;
 
-  preArmMessages: Array<object>;
+  preArmMessages: Array<PreArmMessage>;
+
+  customHomePositionMarker: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar) {
   }
@@ -83,11 +87,25 @@ export class MapToolComponent implements AfterViewInit {
     this.pointsArray = [];
     this.preArmMessages = [];
 
-    this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2)});
+    this.socketService.mavlink_client_created.subscribe(data => {
+      console.log(data);
+      if(data.status == 0) {
+        this.snackBar.open(data.message, null, {
+          duration: 5000,
+        });
+      }
+    });
+
+    this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2); });
     this.socketService.heartbeat.subscribe(data => {this.heartbeat = data; });
-    this.socketService.prearm.subscribe(data => {this.prearm = data; this.managePrearmMessages(data);});
+    this.socketService.prearm.subscribe(data => {this.prearm = data; this.managePrearmMessages(data); });
 
     this.socketService.attitude.subscribe(data => {this.attitude = data; this.changeAttitude(data); });
+    this.socketService.home_position.subscribe(data => {console.log('Got new home', data); this.home_position = data;});
+  }
+
+  requestPorts() {
+    this.getPorts();
   }
 
   managePrearmMessages(data) {
@@ -163,13 +181,9 @@ export class MapToolComponent implements AfterViewInit {
         });
   }
 
-  refreshPorts(): void {
-    this.getPorts();
-  }
-
   startListening(): void {
     console.log("Selected: ", this.selectedPort);
-    this.apiService.startListening(this.selectedPort).subscribe(result => {
+    this.apiService.startListening(this.selectedPort, this.selectedBaud).subscribe(result => {
       console.log("START LISTENING RESULT: " + result);
       this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps;  this.drawReceivedFromSerial(this.newGps)});
     });
@@ -329,16 +343,27 @@ console.log("OLOLO: ", this.prevPoint.center);
     });
 
     this.drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: google.maps.drawing.OverlayType.POLYGON,
+      drawingMode: '',
       drawingControl: true,
       drawingControlOptions: {
         position: google.maps.ControlPosition.TOP_CENTER,
-        drawingModes: ['polygon']
+        drawingModes: ['polygon', 'marker']
       }
     });
 
     this.drawingManager.setMap(this.map);
     let component = this;
+
+    google.maps.event.addListener(this.drawingManager, 'markercomplete', (event) => {
+      if(this.customHomePositionMarker) {
+        this.customHomePositionMarker.setMap(null);
+      }
+      this.customHomePositionMarker = event;
+      //alert(event.position.lat());
+
+      this.socketService.setHome(event.position);
+    });
+
     google.maps.event.addListener(this.drawingManager, 'polygoncomplete', (event) => {
       
       // Polygon drawn

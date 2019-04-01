@@ -123,14 +123,19 @@
 
 </div>
 <mat-form-field>
-  <mat-select placeholder="Ports available" [(ngModel)]="selectedPort" name="portsSelect">
+  <mat-select placeholder="Ports available" (openedChange)="requestPorts()" [(ngModel)]="selectedPort" name="portsSelect">
     <mat-option *ngFor="let port of availablePorts" [value]="port">
       {{port}}
     </mat-option>
   </mat-select>
 </mat-form-field>
+<mat-form-field>
+  <mat-select placeholder="Select baud rate" [(ngModel)]="selectedBaud" name="baudSelect">
+    <mat-option [value]="57600">57600</mat-option>
+    <mat-option [value]="115200">115200</mat-option>
+  </mat-select>
+</mat-form-field>
 
-<button mat-raised-button (click)="refreshPorts()">Refresh ports</button>
 <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Start Listening {{selectedPort}}</button>
 
 <mat-slider
@@ -161,6 +166,8 @@
 <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
 
 <button (click)="armCopter()"  mat-raised-button>Arm</button>
+
+<button (click)="setHomeLocation()"  mat-raised-button>Set home location</button>
 
 <button (click)="reboot()"  mat-raised-button>Reboot</button>
 

@@ -1,3 +1,4 @@
+const util = require('util');
 const mavlink = require('mavlink');
 const SerialPort = require('serialport');
 
@@ -16,77 +17,129 @@ module.exports = class MavlinkClient {
         this._prearmSubscribers = [];
         this._batteryStatusSibscribers = [];
         this._homePositionSubscribers = [];
-
-        this._createConnectClient();
     }
 
-    _createConnectClient() {
-        this._mavlinkObject = new mavlink(this._startupParams.groundStationId, this._startupParams.deviceId);
-        this._mavport = new SerialPort(this._startupParams.serialPort, { baudRate: this._startupParams.baudRate, autoOpen: true });
-        
-        this._mavlinkObject.on("ready", () => {
-            console.log("Mavlink for serial port " + this._startupParams.serialPort + " is ready");
-            this._mavport.on('data', (data) => {
-                this._mavlinkObject.parse(data);
-            });
-            
-            //listen for Attitude change messages
-            this._mavlinkObject.on("ATTITUDE", (message, fields) => {
-                this._attitudeSubscribers.forEach(subscriber => {
-                    subscriber(fields);
+    createConnectClient() {
+        return new Promise((resolve, reject) => {
+            console.log('Trying to create new client on port ', this._startupParams.serialPort);
+            this._resolvedPort = false;
+
+            let mavlinkPromise = new Promise((mavresolve, mavreject) => {
+                this._mavlinkObject = new mavlink(this._startupParams.groundStationId, this._startupParams.deviceId);
+                this._mavlinkObject.on("ready", () => {
+                    mavresolve();
                 });
             });
 
-            //listen for Heartbeat status messages
-            this._mavlinkObject.on("HEARTBEAT", (message, fields) => {
-                this._heartbeatSubscribers.forEach(subscriber => {
-                    subscriber(fields);
+            let portPromise = new Promise((portresolve, portreject) => {
+                this._mavport = new SerialPort(this._startupParams.serialPort, { baudRate: this._startupParams.baudRate, autoOpen: true }, () => {
+                    if(!this._mavport.isOpen) {
+                        portreject("Port was not opened: " + this._startupParams.serialPort);
+                    } else {
+                        portresolve();
+                    }
                 });
             });
 
-            //listen for Status messages
-            this._mavlinkObject.on("STATUSTEXT", (message, fields) => {
-                let status_text = fields.text;
-                let PRE_ARM = 'PreArm';
-                if (status_text.indexOf(PRE_ARM) >= 0) {
-                    this._prearmSubscribers.forEach(subscriber => {
+            Promise.all([mavlinkPromise, portPromise]).then(() => {
+                this._mavport.on('data', (data) => {
+                    this._mavlinkObject.parse(data);
+                });
+                
+                //listen for Attitude change messages
+                this._mavlinkObject.on("ATTITUDE", (message, fields) => {
+                    this._attitudeSubscribers.forEach(subscriber => {
                         subscriber(fields);
                     });
-                }                
-            });
-
-            //listen for GPS messages
-            this._mavlinkObject.on("GPS_RAW_INT", (message, fields) => {
-                this._gpsSubscribers.forEach(subscriber => {
-                    subscriber(fields);
                 });
-            });
-
-            // Listen for Battery status messages
-            this._mavlinkObject.on("BATTERY_STATUS", (message, fields) => {
-                this._batteryStatusSibscribers.forEach(subscriber => {
-                    subscriber(fields);
+    
+                //listen for Heartbeat status messages
+                this._mavlinkObject.on("HEARTBEAT", (message, fields) => {
+                    if (!this._resolvedPort) {
+                        this._resolvedPort = true;
+                        console.log('Successfuly created MavLink Client');
+                        resolve();
+                    }
+                        
+                    this._heartbeatSubscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
                 });
-            });
-
-            // Listen for Home position status messages
-            this._mavlinkObject.on("HOME_POSITION", (message, fields) => {
-                this._batteryStatusSibscribers.forEach(subscriber => {
-                    subscriber(fields);
+    
+                //listen for Status messages
+                this._mavlinkObject.on("STATUSTEXT", (message, fields) => {
+                    let status_text = fields.text;
+                    let PRE_ARM = 'PreArm';
+                    if (status_text.indexOf(PRE_ARM) >= 0) {
+                        this._prearmSubscribers.forEach(subscriber => {
+                            subscriber(fields);
+                        });
+                    }                
                 });
+    
+                //listen for GPS messages
+                this._mavlinkObject.on("GPS_RAW_INT", (message, fields) => {
+                    this._gpsSubscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
+                });
+    
+                // Listen for Battery status messages
+                this._mavlinkObject.on("BATTERY_STATUS", (message, fields) => {
+                    this._batteryStatusSibscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
+                });
+    
+                // Listen for Home position status messages
+                this._mavlinkObject.on("HOME_POSITION", (message, fields) => {
+                    console.log('HP');
+                    this._homePositionSubscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
+                });
+
+                // Listen for Home position status messages
+                this._mavlinkObject.on("SET_HOME_POSITION", (message, fields) => {
+                    console.log('SHP');
+                    this._homePositionSubscribers.forEach(subscriber => {
+                        subscriber(fields);
+                    });
+                });
+
+                setTimeout(() => {
+                    if (!this._resolvedPort) {
+                        reject('Port has not responded with Heartbeat')
+                    }
+                }, 10000);
+            }).catch((err) => {
+                console.log('Promise error happened, ', err);
+                reject(err);
             });
-        }); 
+        });
     }
 
     reconnectToDrone() {
-        this._createConnectClient();
+        this.createConnectClient();
     }
 
     rebootSystems(autopilot, computer) {
         //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
         //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
         //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
-        this._sendCommandLong(1, 1, 0, 0, 0, 0, 0, 246, 1, 1, 1);        
+        this._sendCommandLong(1, 1, 0, 0, 0, 0, 0, 246, 1, 1, 1);
+        setTimeout(() => {
+            this._mavport.close((err) => {
+                if (err) {
+                    throw err;
+                } else {
+                    console.log('Closed port; going to reconnect to Copter in 10 seconds');
+                    setTimeout(() => {
+                        this.createConnectClient();
+                    }, 10000);
+                }
+            });
+        }, 1000);
     }
 
     subscribeToGps(subscriber) {
@@ -107,6 +160,10 @@ module.exports = class MavlinkClient {
 
     subscribeToBatteryStatus(subscriber) {
         this._batteryStatusSibscribers.push(subscriber);
+    }
+
+    subscribeToHomePosition(subscriber) {
+        this._homePositionSubscribers.push(subscriber);
     }
 
     armCopter() {
@@ -165,24 +222,26 @@ module.exports = class MavlinkClient {
 
     //MAV_CMD_DO_SET_HOME 179 1:Use current (1=use current location, 0=use specified location) 5-7: lat, lng, alt
     setHomePosition(lat = 0, lng = 0, alt = 10) {
+        console.log('Going to set new Home position');
         this._sendCommandLong((!lat && !lng) ? 1 : 0, 0, 0, 0, lat, lng, alt, 179, 1);
     }
 
     //MAV_CMD_GET_HOME_POSITION 410
     async getHomePosition() {
-        this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 410, 1);
-        let home = await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
+            console.log('hui');
             this._homePositionSubscribers.push((fields) => {
+                console.log('GOT NEW HOME POS');
                 resolve(fields);
             });
+
+            //this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 410, 1);
+            this.requestMessage(242);
+            //this._homePositionSubscribers = [];
         });
-
-        this._homePositionSubscribers = [];
-
-        return home;
     }
 
-    //MAV_CMD_REQUEST_MESSAGE 512 1: messageID
+    // MAV_CMD_REQUEST_MESSAGE 512 1: messageID
     // Please get messageId from official mavlink documentation:
     // https://mavlink.io/en/messages/common.html#mavlink-messages
     requestMessage(messageId) {

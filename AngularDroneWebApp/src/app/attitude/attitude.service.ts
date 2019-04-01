@@ -120,6 +120,7 @@ export class AttitudeService {
     }  
 
     rotateCamera(roll, pitch, yaw) {
+      if(!this.camera) return;
       this.camera.rotation.z = roll;
       this.camera.rotation.x = pitch;
       this.camera.rotation.y = -yaw;

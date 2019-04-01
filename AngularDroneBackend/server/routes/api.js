@@ -1,31 +1,47 @@
 const express = require('express');
 const router = express.Router();
-
-const MavlinkClient = require('../services/mavlinkClient');
+const nhttp = require('http').Server(express);
+const io = require('socket.io')(nhttp);
 
 const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
 
-const LocalStorage = require('node-localstorage').LocalStorage,
-localStorage = new LocalStorage('./scratch');
+const MavlinkClient = require('../services/mavlinkClient');
 
-let client = new MavlinkClient('COM14', 115200, 1, 1);
+const DEFAULT_PORT = "COM100";
+const DEFAULT_BAUD = 115200;
+let CURRENT_PORT = null;
+let client = null;
 
-client.subscribeToHeartbeat((data) => {
-    console.log(data);
-    io.emit('heartbeat', data);
-});
+let connectMavlink = (port, baud) => {
+  client = new MavlinkClient(port, baud, 1, 1);
+  client.createConnectClient().then(() => {
+    CURRENT_PORT = port;
 
-client.subscribeToPreArmStatus((data) => {
-    io.emit('prearm', data);
-});
+    client.subscribeToHeartbeat((data) => {
+      io.emit('heartbeat', data);
+    });
+    
+    client.subscribeToPreArmStatus((data) => {
+        io.emit('prearm', data);
+    });
+    
+    client.subscribeToAttitude((data) => {
+        io.emit('attitude', data);
+    });
 
-client.subscribeToAttitude((data) => {
-    io.emit('attitude', data);
-});
+    client.subscribeToHomePosition((data) => {
+      io.emit('homeposition', data);
+  });
+    
+    client.subscribeToGps((data) => {
+      io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: 60});
+    });
 
-client.subscribeToGps((data) => {
-  io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: 60});
-});
+    io.emit('mavlink_client_created', { status: 1, message: "Success" });
+  }).catch(err => {
+    io.emit('mavlink_client_created', { status: 0, message: err.message });
+  });
+}
 
 let parser = undefined;
 let port = undefined;
@@ -36,10 +52,7 @@ let planPointIndex = 0;
 let batteryLevel = 100;
 let sprayLevel = 100;
 
-const SerialPort = require('serialport');
-const Readline = require('@serialport/parser-readline')
-const nhttp = require('http').Server(express);
-const io = require('socket.io')(nhttp);
+//connectMavlink(DEFAULT_PORT, DEFAULT_BAUD);
 
 io.on("connection", socket => {
   socket.on('newposition', (position) => {
@@ -75,15 +88,15 @@ io.on("connection", socket => {
     //flightPlan = plan;
     planPointIndex = 0;
     targetPosition = {
-        lat: flightPlan[0].position.X,
-        lng: flightPlan[0].position.Y
-        };
+      lat: flightPlan[0].position.X,
+      lng: flightPlan[0].position.Y
+    };
     status = 1;
     console.log(flightPlan);
     let lat = 52.461099646230515;
-  let lng = 30.953739391214980;
-  let angle = 0;
-  iteration = 0;
+    let lng = 30.953739391214980;
+    let angle = 0;
+    iteration = 0;
   
 
   emit(lat, lng, angle);
@@ -101,6 +114,13 @@ io.on("connection", socket => {
   socket.on('rebootSystem', (params) => {
     client.rebootSystems(0, 0);
   });
+
+  socket.on('setHome', async gps => {
+    client.setHomePosition(gps.lat, gps.lng);
+    let newHome = await client.getHomePosition();
+    console.log('NEWHOME:', newHome);
+    io.emit('homeposition', newHome);
+  })
 });
 
 
@@ -229,66 +249,23 @@ function emit(lat, lng, angle) {
 }
 
 router.get('/ports', (req, res) => {
-  SerialPort.list().then(
-    ports => ports.forEach((value, index, array) => {
-      console.log("SERIAL PORT: ", value.comName);
-    }),
-    err => console.error(err)
-  )
-
-  for(let i = 0; i < localStorage.length; i++) {
-    var k = localStorage.key(i);
-    if(k.indexOf("COM") !== -1) {
-      console.log("Port found: ", k);
-      port = new SerialPort(k, {baudRate: 9600, autoOpen: false});
-      port.close();
-      //localStorage.removeItem(k);
-    }
-  }
-  for(let i = 0; i < localStorage.length; i++) {
-    var k = localStorage.key(i);
-    if(k.indexOf("COM") !== -1) {
-      localStorage.removeItem(k);
-    }
-  }
-
     let ports = [];
     var list = serialNode.list();
     for(i=0;i<list.length;i++) 
     {
         ports.push(list[i]); 
     }
+    if(CURRENT_PORT)
+      ports.push(CURRENT_PORT + ": Current");
     res.send(ports);
 });
-
-
 
 router.put('/ports', (req, res) => {
     if(port)
     {
         port.close();
     }
-    if(localStorage.getItem(req.body.port)) {
-      port = new SerialPort(req.body.port, {baudRate: 9600, autoOpen: false});
-      port.close();
-      localStorage.removeItem(req.body.port);
-    }
-
-    port = new SerialPort(req.body.port, {baudRate: 9600, autoOpen: false})
-    port.open(function (err) {
-        if (err) {
-          return console.log('Error opening port: ', err.message)
-        }
-        console.log("port opened");
-        localStorage.setItem(req.body.port, 'opened');
-        parser = port.pipe(new Readline('*'))
-        parser.on('data', function(data) {
-            console.log('Data:', data);
-            io.emit('newcoordinate', data);
-        })
-      })
-
-
+    connectMavlink(req.body.port, req.body.baud);
     res.send({result:"success"});
 });
 

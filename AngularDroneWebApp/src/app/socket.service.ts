@@ -16,6 +16,10 @@ export class SocketService {
 
   attitude = this.socket.fromEvent<string>('attitude');
 
+  home_position = this.socket.fromEvent<string>('homeposition')
+
+  mavlink_client_created = this.socket.fromEvent<any>('mavlink_client_created');
+
   constructor(private socket: Socket) { }
 
   setNewPosition(gps) {
@@ -32,5 +36,9 @@ export class SocketService {
 
   rebootSystem() {
     this.socket.emit('rebootSystem', 1);
+  }
+
+  setHome(gps) {
+    this.socket.emit('setHome', gps);
   }
 }
