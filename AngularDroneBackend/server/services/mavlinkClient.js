@@ -19,6 +19,17 @@ module.exports = class MavlinkClient {
         this._homePositionSubscribers = [];
     }
 
+    get modes() {
+        return {
+            COPTER_MODE_STABILIZE: 0,
+            COPTER_MODE_ALT_HOLD: 2,
+            COPTER_MODE_GUIDED: 4,
+            COPTER_MODE_RTL: 6,
+            COPTER_MODE_LAND: 9,
+            COPTER_MODE_POSHOLD: 16
+        }
+    }
+
     createConnectClient() {
         return new Promise((resolve, reject) => {
             console.log('Trying to create new client on port ', this._startupParams.serialPort);
@@ -208,12 +219,16 @@ module.exports = class MavlinkClient {
     }
 
     //MAV_CMD_NAV_GUIDED_ENABLE 92
-    //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE
     
     //MAV_CMD_DO_CHANGE_SPEED 178  1: 0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed
     
     //MAV_CMD_DO_SET_SERVO 183 1: servo nmb  2: PWM microseconds
     //MAV_CMD_DO_PAUSE_CONTINUE 193  1: 0=pause 1=continue
+
+    //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE (220 = AUTO_ARMED), 2: ArduCopter-specific mode name
+    setMode(modeName) {
+        this._sendCommandLong(220, this.modes[modeName], 0, 0, 0, 0, 0, 176, 1);
+    }
 
     //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 
     setAltitude(alt = 10) {
@@ -229,7 +244,6 @@ module.exports = class MavlinkClient {
     //MAV_CMD_GET_HOME_POSITION 410
     async getHomePosition() {
         return new Promise((resolve, reject) => {
-            console.log('hui');
             this._homePositionSubscribers.push((fields) => {
                 console.log('GOT NEW HOME POS');
                 resolve(fields);

@@ -46,7 +46,7 @@ export class MapToolComponent implements AfterViewInit {
   gridAngle: any;
   gridStep: any;
 
-  //sliders
+  // sliders
   autoTicks = false;
   disabled = false;
   invert = false;
@@ -378,25 +378,22 @@ console.log("OLOLO: ", this.prevPoint.center);
       });
       google.maps.event.addListener(event.getPath(), 'remove_at', function() {
         console.log('Vertex created.');
-        if(event.getPath().length > 2) {
+        if (event.getPath().length > 2) {
           component.drawCCCC();
         }
-        
-      });
 
-      
-      
+      });
     });
 
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
-      //component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
-      //component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
+      // component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
+      // component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
 
     google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
       if (event.type === google.maps.drawing.OverlayType.POLYGON) {
-        //this is the coordinate, you can assign it to a variable or pass into another function.
+        // this is the coordinate, you can assign it to a variable or pass into another function.
         this.lastPolygon = event.overlay.getPath().getArray();
         event.overlay.setOptions({
           editable: true,
@@ -407,7 +404,7 @@ console.log("OLOLO: ", this.prevPoint.center);
         this.droneOverlay.setMap(component.map);
         google.maps.event.addListener(event.overlay, 'dblclick', (function(vertex) {
           console.log(vertex);
-          if(event.overlay.getPath().length > 3) {
+          if (event.overlay.getPath().length > 3) {
             event.overlay.getPath().removeAt(vertex.vertex);
           }
         }));

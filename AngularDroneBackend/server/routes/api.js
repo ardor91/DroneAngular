@@ -31,7 +31,7 @@ let connectMavlink = (port, baud) => {
 
     client.subscribeToHomePosition((data) => {
       io.emit('homeposition', data);
-  });
+    });
     
     client.subscribeToGps((data) => {
       io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: 60});
@@ -120,7 +120,31 @@ io.on("connection", socket => {
     let newHome = await client.getHomePosition();
     console.log('NEWHOME:', newHome);
     io.emit('homeposition', newHome);
-  })
+  });
+
+  socket.on('takeoff', (altitude) => {
+    client.takeOff(altitude);
+  });
+
+  socket.on('land', (lat, lng, alt) => {
+    client.land(lat, lng, alt);
+  });
+
+  socket.on('setModeLand', () => {
+    client.setMode(client.modes.COPTER_MODE_LAND);
+  });
+
+  socket.on('rtl', () => {
+    client.returnToLaunch();
+  });
+
+  socket.on('setModeRtl', () => {
+    client.setMode(client.modes.COPTER_MODE_RTL);
+  });
+
+  socket.on('setModePosHold', () => {
+    client.setMode(client.modes.COPTER_MODE_POSHOLD);
+  });
 });
 
 

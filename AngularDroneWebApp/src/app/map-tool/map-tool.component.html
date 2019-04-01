@@ -167,8 +167,20 @@
 
 <button (click)="armCopter()"  mat-raised-button>Arm</button>
 
-<button (click)="setHomeLocation()"  mat-raised-button>Set home location</button>
-
 <button (click)="reboot()"  mat-raised-button>Reboot</button>
+
+<mat-slider
+        class="example-margin"
+        [max]="250"
+        [min]="0"
+        [step]="1"
+        [thumbLabel]="thumbLabel"
+        [(ngModel)]="altitudeDestination"
+        [displayWith]="formatLabel">
+</mat-slider>
+<button mat-raised-button (click)="takeoff()">Takeoff</button>
+<button mat-raised-button (click)="rtl()">RTL</button>
+<button mat-raised-button (click)="land()">Land</button>
+
 
 <div style="margin-top: 10px" id="map"></div>
