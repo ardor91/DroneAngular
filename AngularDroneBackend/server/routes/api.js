@@ -1,18 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-const mavlink = require('mavlink');
 const MavlinkClient = require('../services/mavlinkClient');
-
-let myMAV = new mavlink(1,1);
-
-
 
 const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
 
 const LocalStorage = require('node-localstorage').LocalStorage,
 localStorage = new LocalStorage('./scratch');
-
 
 let client = new MavlinkClient('COM14', 115200, 1, 1);
 
@@ -22,7 +16,6 @@ client.subscribeToHeartbeat((data) => {
 });
 
 client.subscribeToPreArmStatus((data) => {
-    //console.log(data);
     io.emit('prearm', data);
 });
 
@@ -40,7 +33,6 @@ let port = undefined;
 let targetPosition = undefined;
 let flightPlan = undefined;
 let planPointIndex = 0;
-let isGoingToStart = true;
 let batteryLevel = 100;
 let sprayLevel = 100;
 
@@ -49,14 +41,8 @@ const Readline = require('@serialport/parser-readline')
 const nhttp = require('http').Server(express);
 const io = require('socket.io')(nhttp);
 
-/* GET api listing. */
-router.get('/', (req, res) => {
-  res.send('api works');
-});
-
 io.on("connection", socket => {
   socket.on('newposition', (position) => {
-    console.log("NEW POSITION BLAT, ", position);
     targetPosition = position;
   });
 

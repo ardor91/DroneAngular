@@ -92,10 +92,25 @@ module.exports = class MavlinkClient {
     }
 
     land(lat, lng, alt) {
+        //MAV_CMD_NAV_LAND 21
         this.sendCommandLong(0, 0, 0, 0, lat, lng, alt, 21, 1);
     }
 
+    //MAV_CMD_NAV_RETURN_TO_LAUNCH 20
+    //MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT 30
+    //MAV_CMD_NAV_SPLINE_WAYPOINT 82
+    //MAV_CMD_NAV_GUIDED_ENABLE 92
+    //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE
+    //MAV_CMD_DO_CHANGE_SPEED 178  1: 0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed
+    //MAV_CMD_DO_SET_HOME 179 1:Use current (1=use current location, 0=use specified location) 5-7: lat, lng, alt
+    //MAV_CMD_DO_SET_SERVO 183 1: servo nmb  2: PWM microseconds
+    //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 
+    //MAV_CMD_DO_PAUSE_CONTINUE 193  1: 0=pause 1=continue
+    //MAV_CMD_GET_HOME_POSITION 410
+    //MAV_CMD_REQUEST_MESSAGE 512 1: messageID
+
     navToWaypoint(holdTime = 0, radius = 1, lat, lng, alt) {
+        //MAV_CMD_NAV_WAYPOINT 16
         this.sendCommandLong(holdTime, radius, 0, 0, lat, lng, alt, 16, 1);
     }
 
