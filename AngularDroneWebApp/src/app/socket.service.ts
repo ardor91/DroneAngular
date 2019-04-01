@@ -34,11 +34,27 @@ export class SocketService {
     this.socket.emit('armCopter', 1);
   }
 
-  rebootSystem() {
-    this.socket.emit('rebootSystem', 1);
+  takeoff(altitude) {
+    this.socket.emit('takeoff', altitude);
   }
 
   setHome(gps) {
     this.socket.emit('setHome', gps);
+  }
+
+  setPosHold() {
+    this.socket.emit('setModePosHold');
+  }
+
+  rtl() {
+    this.socket.emit('setModeRtl');
+  }
+
+  land() {
+    this.socket.emit('setModeLand');
+  }
+
+  rebootSystem() {
+    this.socket.emit('rebootSystem', 1);
   }
 }

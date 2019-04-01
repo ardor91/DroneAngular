@@ -175,10 +175,10 @@
         [min]="0"
         [step]="1"
         [thumbLabel]="thumbLabel"
-        [(ngModel)]="altitudeDestination"
-        [displayWith]="formatLabel">
+        [(ngModel)]="selectedAltitude">
 </mat-slider>
 <button mat-raised-button (click)="takeoff()">Takeoff</button>
+<button mat-raised-button (click)="setPosHold()">Set pos hold mode</button>
 <button mat-raised-button (click)="rtl()">RTL</button>
 <button mat-raised-button (click)="land()">Land</button>
 

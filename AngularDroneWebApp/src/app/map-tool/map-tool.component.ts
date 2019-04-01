@@ -27,6 +27,7 @@ export class MapToolComponent implements AfterViewInit {
   availablePorts: any;
   selectedPort: string;
   selectedBaud: string;
+  selectedAltitude: string;
   newGps: string;
   newGps2: string;
 
@@ -161,7 +162,7 @@ export class MapToolComponent implements AfterViewInit {
 
 
   startWork() {
-    if(!this.flightPlan) return;
+    if (!this.flightPlan) { return; }
     this.socketService.sendFlightPlan(this.flightPlan);
   }
 
@@ -172,7 +173,23 @@ export class MapToolComponent implements AfterViewInit {
   reboot() {
     this.socketService.rebootSystem();
   }
- 
+
+  setPosHold() {
+    this.socketService.setPosHold();
+  }
+
+  takeoff() {
+    this.socketService.takeoff(this.selectedAltitude);
+  }
+
+  rtl() {
+    this.socketService.rtl();
+  }
+
+  land() {
+    this.socketService.land();
+  }
+
   getPorts(): void {
     this.apiService.getPorts()
         .subscribe(ports => {
@@ -387,6 +404,7 @@ console.log("OLOLO: ", this.prevPoint.center);
 
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
+
       // component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
       // component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
