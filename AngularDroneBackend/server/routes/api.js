@@ -4,7 +4,7 @@ const nhttp = require('http').Server(express);
 const io = require('socket.io')(nhttp);
 
 const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
-
+const SerialPort = require('serialport');
 const MavlinkClient = require('../services/mavlinkClient');
 
 const DEFAULT_PORT = "COM100";
@@ -249,15 +249,20 @@ function emit(lat, lng, angle) {
 }
 
 router.get('/ports', (req, res) => {
-    let ports = [];
-    var list = serialNode.list();
-    for(i=0;i<list.length;i++) 
-    {
-        ports.push(list[i]); 
-    }
-    if(CURRENT_PORT)
-      ports.push(CURRENT_PORT + ": Current");
-    res.send(ports);
+    let portsList = [];
+    //var list = serialNode.list();
+    SerialPort.list().then(
+      ports => {
+        ports.forEach((port) => {
+          portsList.push(port.comName);
+        });
+        if(CURRENT_PORT)
+        portsList.push(CURRENT_PORT + ": Current");
+        res.send(portsList);
+      },
+      err => console.error(err)
+    )
+    
 });
 
 router.put('/ports', (req, res) => {
