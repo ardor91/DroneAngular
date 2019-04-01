@@ -4,16 +4,26 @@ const SerialPort = require('serialport');
 module.exports = class MavlinkClient {
 
     constructor(serialPort, baudRate = 57600, groundStationId=0, deviceId=0) {
-        this._mavlinkObject = new mavlink(groundStationId, deviceId);
+        this._startupParams = {
+            serialPort: serialPort,
+            baudRate: baudRate,
+            groundStationId: groundStationId,
+            deviceId: deviceId
+        }
         this._gpsSubscribers = [];
         this._attitudeSubscribers = [];
         this._heartbeatSubscribers = [];
         this._prearmSubscribers = [];
 
-        this._mavport = new SerialPort(serialPort, { baudRate: baudRate, autoOpen: true });
+        this._createConnectClient();
+    }
+
+    _createConnectClient() {
+        this._mavlinkObject = new mavlink(this._startupParams.groundStationId, this._startupParams.deviceId);
+        this._mavport = new SerialPort(this._startupParams.serialPort, { baudRate: this._startupParams.baudRate, autoOpen: true });
         
         this._mavlinkObject.on("ready", () => {
-            console.log("Mavlink for serial port " + serialPort + " is ready");
+            console.log("Mavlink for serial port " + this._startupParams.serialPort + " is ready");
             this._mavport.on('data', (data) => {
                 this._mavlinkObject.parse(data);
             });
@@ -52,6 +62,17 @@ module.exports = class MavlinkClient {
         }); 
     }
 
+    reconnectToDrone() {
+        this._createConnectClient();
+    }
+
+    rebootSystems(autopilot, computer) {
+        //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
+        //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
+        //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
+        this._sendCommandLong(1, 1, 0, 0, 0, 0, 0, 246, 1, 1, 1);        
+    }
+
     subscribeToGps(subscriber) {
         this._gpsSubscribers.push(subscriber);
     }
@@ -71,29 +92,27 @@ module.exports = class MavlinkClient {
     armCopter() {
         //MAV_CMD_COMPONENT_ARM_DISARM  400
         //1: 0 - disarm, 1 - arm
-        this.sendCommandLong(1, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1); 
+        this._sendCommandLong(1, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1); 
     }
 
     disarmCopter() {
         //MAV_CMD_COMPONENT_ARM_DISARM  400
         //1: 0 - disarm, 1 - arm
-        this.sendCommandLong(0, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1);        
-    }
-
-    rebootSystems(autopilot, computer) {
-        //MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN  246
-        //1: 0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.
-        //2: 0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.
-        this.sendCommandLong(1, 1, 0, 0, 0, 0, 0, 246, 1, 1, 1);        
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1);        
     }
 
     takeOff(altitude) {
-        this.sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
     }
 
     land(lat, lng, alt) {
         //MAV_CMD_NAV_LAND 21
-        this.sendCommandLong(0, 0, 0, 0, lat, lng, alt, 21, 1);
+        this._sendCommandLong(0, 0, 0, 0, lat, lng, alt, 21, 1);
+    }
+
+    navToWaypoint(holdTime = 0, radius = 1, lat, lng, alt) {
+        //MAV_CMD_NAV_WAYPOINT 16
+        this._sendCommandLong(holdTime, radius, 0, 0, lat, lng, alt, 16, 1);
     }
 
     //MAV_CMD_NAV_RETURN_TO_LAUNCH 20
@@ -109,12 +128,7 @@ module.exports = class MavlinkClient {
     //MAV_CMD_GET_HOME_POSITION 410
     //MAV_CMD_REQUEST_MESSAGE 512 1: messageID
 
-    navToWaypoint(holdTime = 0, radius = 1, lat, lng, alt) {
-        //MAV_CMD_NAV_WAYPOINT 16
-        this.sendCommandLong(holdTime, radius, 0, 0, lat, lng, alt, 16, 1);
-    }
-
-    sendCommandLong(param1, param2, param3, param4, param5, param6, param7, command, confirmation) {
+    _sendCommandLong(param1, param2, param3, param4, param5, param6, param7, command, confirmation) {
         this._mavlinkObject.createMessage("COMMAND_LONG",
         { 
             'param1': param1,
