@@ -72,6 +72,7 @@ export class MapToolComponent implements AfterViewInit {
   preArmMessages: Array<PreArmMessage>;
 
   customHomePositionMarker: any;
+  connected: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
   }

@@ -1,3 +1,75 @@
+<mat-card>
+    <mat-card-header>
+      <mat-card-title>Connection</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <mat-form-field>
+            <mat-select placeholder="Ports available" (openedChange)="requestPorts()" [(ngModel)]="selectedPort" name="portsSelect">
+              <mat-option *ngFor="let port of availablePorts" [value]="port">
+                {{port}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-select placeholder="Select baud rate" [(ngModel)]="selectedBaud" name="baudSelect">
+              <mat-option [value]="57600">57600</mat-option>
+              <mat-option [value]="115200">115200</mat-option>
+            </mat-select>
+          </mat-form-field>
+          
+          <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Connect</button>
+          <button *ngIf="connected" mat-raised-button (click)="startListening()">Disconnect</button>
+    </mat-card-content>
+</mat-card>
+        
+
+        <mat-slider
+            class="example-margin"
+            tickInterval="1000"
+            [max]="360"
+            [min]="0"
+            [step]="1"
+            [thumbLabel]="thumbLabel"
+            [(ngModel)]="gridAngle"
+            (change)="angleChanged()">
+        </mat-slider>
+
+        <mat-slider
+            class="example-margin"
+            [max]="0.0001"
+            [min]="0.000001"
+            [step]="0.000001"
+            [thumbLabel]="thumbLabel"
+            [(ngModel)]="gridStep"
+            [displayWith]="formatLabel"
+            (change)="stepChanged()">
+        </mat-slider>
+        <button mat-raised-button (click)="changeSettings()">Change</button>
+
+        <button (click)="drawCCCC()" *ngIf="this.lastPolygon" mat-raised-button>Make path from polygon</button>
+
+        <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
+
+        <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
+        <button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
+
+        <button (click)="reboot()"  mat-raised-button>Reboot</button>
+
+        <mat-slider
+                class="example-margin"
+                [max]="3"
+                [min]="0"
+                [step]="1"
+                [thumbLabel]="thumbLabel"
+                [(ngModel)]="selectedAltitude">
+        </mat-slider>
+        <button mat-raised-button (click)="takeoff()">Takeoff</button>
+        <button mat-raised-button (click)="setStabilize()">Set stabilize mode</button>
+        <button mat-raised-button (click)="setPosHold()">Set pos hold mode</button>
+        <button mat-raised-button (click)="rtl()">RTL</button>
+        <button mat-raised-button (click)="land()">Land</button>
+
+
 <div class="cardsContainer">
 <mat-card class="flex heartbeatStatus" *ngIf="heartbeat">
   <mat-card-header>
@@ -12,12 +84,6 @@
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
-        <span class="title">Autopilot</span>
-        <span class="fill-space"></span>
-        <span class="value">{{heartbeat.autopilot == 3 ? 'ArduPilot' : 'Some other'}}</span>  
-      </mat-list-item>
-      <mat-divider></mat-divider>
-      <mat-list-item>
         <span class="title">Base mode</span>
         <span class="fill-space"></span>
         <span class="value">{{heartbeat.base_mode}}</span>  
@@ -27,12 +93,6 @@
         <span class="title">Custom mode</span>
         <span class="fill-space"></span>
         <span class="value">{{getCustomMode(heartbeat.custom_mode)}}</span>  
-      </mat-list-item>
-      <mat-divider></mat-divider>
-      <mat-list-item>
-        <span class="title">Mavlink version</span>
-        <span class="fill-space"></span>
-        <span class="value">{{heartbeat.mavlink_version}}</span>  
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
@@ -74,24 +134,6 @@
           <span class="fill-space"></span>
           <span class="value">{{attitude.yaw}}</span>  
         </mat-list-item>
-        <mat-divider></mat-divider>
-        <mat-list-item>
-          <span class="title">Roll speed</span>
-          <span class="fill-space"></span>
-          <span class="value">{{attitude.rollspeed}}</span>  
-        </mat-list-item>
-        <mat-divider></mat-divider>
-        <mat-list-item>
-          <span class="title">Pitch speed</span>
-          <span class="fill-space"></span>
-          <span class="value">{{attitude.pitchspeed}}</span>  
-        </mat-list-item>
-        <mat-divider></mat-divider>
-        <mat-list-item>
-            <span class="title">Yaw speed</span>
-            <span class="fill-space"></span>
-            <span class="value">{{attitude.yawspeed}}</span>  
-          </mat-list-item>
       </mat-list>
     </mat-card-content>
   </mat-card>
@@ -122,67 +164,9 @@
 
 
 </div>
-<mat-form-field>
-  <mat-select placeholder="Ports available" (openedChange)="requestPorts()" [(ngModel)]="selectedPort" name="portsSelect">
-    <mat-option *ngFor="let port of availablePorts" [value]="port">
-      {{port}}
-    </mat-option>
-  </mat-select>
-</mat-form-field>
-<mat-form-field>
-  <mat-select placeholder="Select baud rate" [(ngModel)]="selectedBaud" name="baudSelect">
-    <mat-option [value]="57600">57600</mat-option>
-    <mat-option [value]="115200">115200</mat-option>
-  </mat-select>
-</mat-form-field>
 
-<button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Start Listening {{selectedPort}}</button>
 
-<mat-slider
-        class="example-margin"
-        tickInterval="1000"
-        [max]="360"
-        [min]="0"
-        [step]="1"
-        [thumbLabel]="thumbLabel"
-        [(ngModel)]="gridAngle"
-        (change)="angleChanged()">
-    </mat-slider>
 
-    <mat-slider
-        class="example-margin"
-        [max]="0.0001"
-        [min]="0.000001"
-        [step]="0.000001"
-        [thumbLabel]="thumbLabel"
-        [(ngModel)]="gridStep"
-        [displayWith]="formatLabel"
-        (change)="stepChanged()">
-    </mat-slider>
-<button mat-raised-button (click)="changeSettings()">Change</button>
-
-<button (click)="drawCCCC()" *ngIf="this.lastPolygon" mat-raised-button>Make path from polygon</button>
-
-<button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
-
-<button (click)="armCopter(1)"  mat-raised-button>Arm</button>
-<button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
-
-<button (click)="reboot()"  mat-raised-button>Reboot</button>
-
-<mat-slider
-        class="example-margin"
-        [max]="3"
-        [min]="0"
-        [step]="1"
-        [thumbLabel]="thumbLabel"
-        [(ngModel)]="selectedAltitude">
-</mat-slider>
-<button mat-raised-button (click)="takeoff()">Takeoff</button>
-<button mat-raised-button (click)="setStabilize()">Set stabilize mode</button>
-<button mat-raised-button (click)="setPosHold()">Set pos hold mode</button>
-<button mat-raised-button (click)="rtl()">RTL</button>
-<button mat-raised-button (click)="land()">Land</button>
 
 
 <div style="margin-top: 10px" id="map"></div>

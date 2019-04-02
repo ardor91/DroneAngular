@@ -39,7 +39,8 @@ let connectMavlink = (port, baud) => {
 
     io.emit('mavlink_client_created', { status: 1, message: "Success" });
   }).catch(err => {
-    io.emit('mavlink_client_created', { status: 0, message: err.message });
+    console.log("Error: ", err);
+    io.emit('mavlink_client_created', { status: 0, message: err });
   });
 }
 
@@ -292,6 +293,7 @@ router.get('/ports', (req, res) => {
         });
         if(CURRENT_PORT)
         portsList.push(CURRENT_PORT + ": Current");
+        portsList.push("Debug port");
         res.send(portsList);
       },
       err => console.error(err)

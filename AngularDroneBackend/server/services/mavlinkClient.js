@@ -191,8 +191,13 @@ module.exports = class MavlinkClient {
 
     takeOff(altitude) {
         console.log('TAKEOFF; ', altitude);
-        this.setMode(16, 216);
-        this._sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
+        //this.setMode(5, 216);
+        //0	1	0	16	0	0	0	0	52.461707	30.952236	136.090000	1
+        this._sendCommandLong(2, 2, 60, 0, 0, 0, 0, 178, 1);
+
+        this._sendCommandLong(5, 0, 0, 0, 52.461707, 30.952236, 10, 16, 1);
+        
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, 5, 22, 1);
     }
 
     land(lat, lng, alt) {
@@ -229,7 +234,7 @@ module.exports = class MavlinkClient {
 
     //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE (220 = AUTO_ARMED), 2: ArduCopter-specific mode name
     setMode(modeIndex, baseIndex = 81) {
-        this._sendCommandLong(baseIndex, modeIndex, 0, 0, 0, 0, 0, 176, 1);
+        this._sendCommandLong(0, modeIndex, 0, 0, 0, 0, 0, 176, 1);
     }
 
     //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 

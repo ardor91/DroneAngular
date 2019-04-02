@@ -20,6 +20,7 @@ import {MatListModule} from '@angular/material/list';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import { AttitudeComponent } from './attitude/attitude.component';
 import {MatDialogModule} from '@angular/material/dialog';
+import {MatGridListModule} from '@angular/material/grid-list';
 import { SelectPointDialogComponent } from './map-tool/select-point-dialog/select-point-dialog.component';
 
 const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
@@ -46,6 +47,7 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
     MatListModule,
     MatSnackBarModule,
     MatDialogModule,
+    MatGridListModule,
     SocketIoModule.forRoot(config)
   ],
   entryComponents: [
