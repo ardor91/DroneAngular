@@ -33,10 +33,10 @@ export class AttitudeService {
       );
       this.camera.position.z = 5;
       //this.camera.position.y = 5;
-      this.camera.rotation.x = 0;
-      this.camera.rotation.y = 0;
-      this.camera.rotation.z = 0;
-      this.rotateObject(this.camera, 0, 0, 0);
+      //this.camera.rotation.x = 0;
+      //this.camera.rotation.y = 0;
+      //this.camera.rotation.z = 0;
+      //this.rotateObject(this.camera, 0, 0, 0);
       this.scene.add(this.camera);
   
       // soft white light
@@ -47,8 +47,8 @@ export class AttitudeService {
       let geometry = new THREE.BoxGeometry(1, 1, 1);
       let material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       this.cube = new THREE.Mesh( geometry, material );
-
-      this.rotateObject(this.cube, 0, 0, 0);
+      this.cube.position.set( 0, 0, 5 );
+      //this.rotateObject(this.cube, 0, 0, 0);
 
       this.scene.add(this.cube);
 
@@ -61,7 +61,7 @@ export class AttitudeService {
       let color3 = new THREE.MeshBasicMaterial({ color: 0x666666 });
       let color4 = new THREE.MeshBasicMaterial({ color: 0x0000ff });
 
-      let planeDown = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1500, 500, 4, 4 ), greenColor );
+      let planeDown = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1500, 900, 4, 4 ), greenColor );
       planeDown.position.set( 0, -10, -250 );
       this.rotateObject(planeDown, -90, 0, 0);
       this.scene.add( planeDown );
@@ -70,16 +70,17 @@ export class AttitudeService {
       planeForward.position.set( 0, 0, -500 );
       this.scene.add( planeForward );
 
-      let planeBackward = new THREE.Mesh( new THREE.PlaneBufferGeometry( 500, 500, 4, 4 ), blueColor );
+      let planeBackward = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1500, 900, 4, 4 ), blueColor );
       planeBackward.position.set( 0, 0, 250 );
+      this.rotateObject(planeBackward, 0, 180, 0);
       this.scene.add( planeBackward );
 
-      let planeLeft = new THREE.Mesh( new THREE.PlaneBufferGeometry( 500, 500, 1, 1 ), blueColor );
+      let planeLeft = new THREE.Mesh( new THREE.PlaneBufferGeometry( 900, 900, 1, 1 ), blueColor );
       planeLeft.position.set( -450, 0, -250 );
       this.rotateObject(planeLeft, 0, 90, 0);
       this.scene.add( planeLeft );
 
-      let planeRight = new THREE.Mesh( new THREE.PlaneBufferGeometry( 500, 500, 4, 4 ), blueColor );
+      let planeRight = new THREE.Mesh( new THREE.PlaneBufferGeometry( 900, 900, 4, 4 ), blueColor );
       planeRight.position.set( 450, 0, -250 );
       this.rotateObject(planeRight, 0, -90, 0);
       this.scene.add( planeRight );
@@ -122,7 +123,7 @@ export class AttitudeService {
     rotateCamera(roll, pitch, yaw) {
       if(!this.camera) return;
       this.camera.rotation.z = roll;
-      this.camera.rotation.x = pitch;
+      this.camera.rotation.x = -pitch;
       this.camera.rotation.y = -yaw;
       requestAnimationFrame(() => {
         this.render();

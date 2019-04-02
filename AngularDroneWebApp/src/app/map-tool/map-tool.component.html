@@ -8,13 +8,13 @@
       <mat-list-item>
         <span class="title">Type</span>
         <span class="fill-space"></span>
-        <span class="value">{{heartbeat.type}}</span>  
+        <span class="value">{{getMavType(heartbeat.type)}}</span>  
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
         <span class="title">Autopilot</span>
         <span class="fill-space"></span>
-        <span class="value">{{heartbeat.autopilot}}</span>  
+        <span class="value">{{heartbeat.autopilot == 3 ? 'ArduPilot' : 'Some other'}}</span>  
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
@@ -26,7 +26,7 @@
       <mat-list-item>
         <span class="title">Custom mode</span>
         <span class="fill-space"></span>
-        <span class="value">{{heartbeat.custom_mode}}</span>  
+        <span class="value">{{getCustomMode(heartbeat.custom_mode)}}</span>  
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>

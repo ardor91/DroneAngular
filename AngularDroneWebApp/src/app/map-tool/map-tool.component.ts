@@ -67,6 +67,7 @@ export class MapToolComponent implements AfterViewInit {
   home_position: any;
 
   flightPlan: Array<any>;
+  lastPrearmIndex: number;
 
   preArmMessages: Array<PreArmMessage>;
 
@@ -112,6 +113,7 @@ export class MapToolComponent implements AfterViewInit {
   }
 
   managePrearmMessages(data) {
+    this.lastPrearmIndex++;
     let currTimestamp = Date.now() / 1000;
     this.preArmMessages.push({
       message: data.text,
@@ -120,12 +122,25 @@ export class MapToolComponent implements AfterViewInit {
     let tempArray = [];
     this.preArmMessages.forEach((message) => {
       //console.log("diff: ", currTimestamp - message.timestamp);
-      if((currTimestamp - message.timestamp) < 25 ) {
-
+      if((currTimestamp - message.timestamp) < 25 && !this.isMessageExist(message)) {
         tempArray.push(message);
       }
     });
     this.preArmMessages = tempArray;
+    
+    setTimeout((lastPrearmIndex) => {
+      if(this.lastPrearmIndex == lastPrearmIndex) {
+        this.preArmMessages = [];
+      }
+    }, 15000);
+  }
+
+  isMessageExist(message) {
+    this.preArmMessages.forEach((element) => {
+      if(element.message == message.message)
+        return true;
+    })
+    return false;
   }
 
   changeAttitude(data) {
@@ -675,6 +690,40 @@ getSystemMode(value) {
 4	MAV_MODE_FLAG_AUTO_ENABLED	0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not, depends on the actual implementation.
 2	MAV_MODE_FLAG_TEST_ENABLED	0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.
 1	MAV_MODE_FLAG_CUSTOM_MODE_ENABLED	0b00000001 Reserved for future use.*/
+}
+
+getMavType(value) {
+  switch(value) {
+    case 2: return "MAV_TYPE_QUADROTOR";
+    case 0: return "MAV_TYPE_GENERIC";
+    case 13: return "MAV_TYPE_HEXAROTOR";
+    default: return "UNKNOWN";
+  }
+}
+
+getCustomMode(value) {
+  switch(value) {
+    case 0: return "COPTER_MODE_STABILIZE";
+    case 1: return "COPTER_MODE_ACRO";
+    case 2: return "COPTER_MODE_ALT_HOLD";
+    case 3: return "COPTER_MODE_AUTO";
+    case 4: return "COPTER_MODE_GUIDED";
+    case 5: return "COPTER_MODE_LOITER";
+    case 6: return "COPTER_MODE_RTL";
+    case 7: return "COPTER_MODE_CIRCLE";
+    case 9: return "COPTER_MODE_LAND";
+    case 11: return "COPTER_MODE_DRIFT";
+    case 13: return "COPTER_MODE_SPORT";
+    case 14: return "COPTER_MODE_FLIP";
+    case 15: return "COPTER_MODE_AUTOTUNE";
+    case 16: return "COPTER_MODE_POSHOLD";
+    case 17: return "COPTER_MODE_BRAKE";
+    case 18: return "COPTER_MODE_THROW";
+    case 19: return "COPTER_MODE_AVOID_ADSB";
+    case 20: return "COPTER_MODE_GUIDED_NOGPS";
+    case 21: return "COPTER_MODE_SMART_RTL";
+    default: return "UNKNOWN";
+  }
 }
   
 }
