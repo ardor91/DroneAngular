@@ -55,9 +55,9 @@ let sprayLevel = 100;
 //connectMavlink(DEFAULT_PORT, DEFAULT_BAUD);
 
 io.on("connection", socket => {
-  socket.on('newposition', (position) => {
+  /*socket.on('newposition', (position) => {
     targetPosition = position;
-  });
+  });*/
 
   socket.on('flightplan', (plan) => {
     console.log("NEW PLAN BLAT, ", plan);
@@ -103,8 +103,14 @@ io.on("connection", socket => {
     //targetPosition = position;
   });
 
-  socket.on('armCopter', (plan) => {
-    client.armCopter();
+  socket.on('armCopter', (value) => {
+    if (value) {
+      console.log('ARM');
+      client.armCopter();
+    } else {
+      console.log('DISARM');
+      client.disarmCopter();
+    }
   });
 
   socket.on('disarmCopter', (plan) => {
@@ -126,7 +132,7 @@ io.on("connection", socket => {
     client.takeOff(altitude);
   });
 
-  socket.on('land', (lat, lng, alt) => {
+  socket.on('land', ({ lat, lng, alt }) => {
     client.land(lat, lng, alt);
   });
 
@@ -143,7 +149,11 @@ io.on("connection", socket => {
   });
 
   socket.on('setModePosHold', () => {
-    client.setMode(client.modes.COPTER_MODE_POSHOLD);
+    client.setMode(client.modes.COPTER_MODE_POSHOLD, 89);
+  });
+
+  socket.on('newposition', (gps) => {
+    client.navToWaypoint(10, 1, gps.lat, gps.lng, 5);
   });
 });
 

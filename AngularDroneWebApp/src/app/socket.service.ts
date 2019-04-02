@@ -30,8 +30,8 @@ export class SocketService {
     this.socket.emit('flightplan', plan);
   }
 
-  armCopter() {
-    this.socket.emit('armCopter', 1);
+  armCopter(value) {
+    this.socket.emit('armCopter', value);
   }
 
   takeoff(altitude) {
@@ -50,8 +50,8 @@ export class SocketService {
     this.socket.emit('setModeRtl');
   }
 
-  land() {
-    this.socket.emit('setModeLand');
+  land(gps) {
+    this.socket.emit('land', gps);
   }
 
   rebootSystem() {

@@ -168,8 +168,8 @@ export class MapToolComponent implements AfterViewInit {
     this.socketService.sendFlightPlan(this.flightPlan);
   }
 
-  armCopter() {
-    this.socketService.armCopter();
+  armCopter(value) {
+    this.socketService.armCopter(value);
   }
 
   reboot() {
@@ -189,7 +189,11 @@ export class MapToolComponent implements AfterViewInit {
   }
 
   land() {
-    this.socketService.land();
+    this.socketService.land({
+      lat: null,
+      lng: null,
+      alt: 0
+    });
   }
 
   getPorts(): void {
@@ -410,6 +414,7 @@ console.log("OLOLO: ", this.prevPoint.center);
       const dialogRef = component.dialog.open(SelectPointDialogComponent);
 
       dialogRef.afterClosed().subscribe(result => {
+        component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
         console.log(`Dialog result: ${result}`);
       });
       // component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));

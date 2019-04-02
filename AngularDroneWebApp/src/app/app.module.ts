@@ -48,6 +48,9 @@ const config: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
     MatDialogModule,
     SocketIoModule.forRoot(config)
   ],
+  entryComponents: [
+    SelectPointDialogComponent
+  ],
   providers: [{ provide: HAMMER_GESTURE_CONFIG, useClass: GestureConfig },],
   bootstrap: [AppComponent]
 })

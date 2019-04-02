@@ -190,6 +190,8 @@ module.exports = class MavlinkClient {
     }
 
     takeOff(altitude) {
+        console.log('TAKEOFF; ', altitude);
+        this.setMode(16, 216);
         this._sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
     }
 
@@ -226,8 +228,8 @@ module.exports = class MavlinkClient {
     //MAV_CMD_DO_PAUSE_CONTINUE 193  1: 0=pause 1=continue
 
     //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE (220 = AUTO_ARMED), 2: ArduCopter-specific mode name
-    setMode(modeName) {
-        this._sendCommandLong(220, this.modes[modeName], 0, 0, 0, 0, 0, 176, 1);
+    setMode(modeIndex, baseIndex = 81) {
+        this._sendCommandLong(baseIndex, modeIndex, 0, 0, 0, 0, 0, 176, 1);
     }
 
     //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 
