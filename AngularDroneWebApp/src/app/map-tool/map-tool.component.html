@@ -222,7 +222,32 @@
         </mat-select>
       </mat-form-field><button (click)="sendMode()" mat-raised-button>Send mode</button><br>
       <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
-      <button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
+      <button (click)="armCopter(0)"  mat-raised-button>Disarm</button><br><br>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 1" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 2" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 3" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 4" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 5" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 6" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Param 7" value="0">          
+      </mat-form-field>
+      <mat-form-field class="example-full-width">
+          <input matInput placeholder="Command Id" value="0">          
+      </mat-form-field>
+    <button (click)="sendCommand()" mat-raised-button>Send command</button><br>
     </mat-card-content>
 </mat-card>
 

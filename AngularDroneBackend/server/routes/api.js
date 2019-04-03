@@ -156,6 +156,10 @@ io.on("connection", socket => {
   socket.on('newposition', (gps) => {
     client.navToWaypoint(10, 1, gps.lat, gps.lng, 5);
   });
+
+  socket.on('custom_mode', (modeId) => {
+    client.customMode(modeId);
+  });
 });
 
 

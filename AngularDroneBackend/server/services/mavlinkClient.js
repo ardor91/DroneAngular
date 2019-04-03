@@ -189,6 +189,10 @@ module.exports = class MavlinkClient {
         this._sendCommandLong(0, 0, 0, 0, 0, 0, 0, 400, 1, 1, 1);        
     }
 
+    customMode(modeId) {
+        this.setMode(modeId);
+    }
+
     takeOff(altitude) {
         console.log('TAKEOFF; ', altitude);
         //this.setMode(5, 216);

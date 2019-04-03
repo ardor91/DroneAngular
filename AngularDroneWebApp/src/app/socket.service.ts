@@ -51,4 +51,9 @@ export class SocketService {
   rebootSystem() {
     this.socket.emit('rebootSystem', 1);
   }
+
+  sendCustomMode(modeID) {
+    this.socket.emit('custom_mode', modeID);
+  }
+  
 }

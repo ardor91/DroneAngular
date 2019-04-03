@@ -76,6 +76,7 @@ export class MapToolComponent implements AfterViewInit {
   isArmed: boolean;
 
   sandboxMode: any;
+  commands: Array<CommandLongModel>;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
   }
@@ -116,6 +117,196 @@ export class MapToolComponent implements AfterViewInit {
 
     this.socketService.attitude.subscribe(data => {this.attitude = data; this.changeAttitude(data); });
     this.socketService.home_position.subscribe(data => {console.log('Got new home', data); this.home_position = data;});
+
+    this.commands = [
+      {
+        commandId: 400,
+        command: "MAV_CMD_COMPONENT_ARM_DISARM",
+        param1: "1 to arm, 0 to disarm",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 246,
+        command: "MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN",
+        param1: "0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.",
+        param2: "0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 22,
+        command: "MAV_CMD_NAV_TAKEOFF",
+        param1: "Minimum pitch",
+        param2: "",
+        param3: "",
+        param4: "Yaw angle",
+        param5: "Latitude",
+        param6: "Longitude",
+        param7: "Altitude"
+      },
+      {
+        commandId: 21,
+        command: "MAV_CMD_NAV_LAND",
+        param1: "Minimum target altitude if landing is aborted",
+        param2: "Precision land mode.",
+        param3: "",
+        param4: "Desired yaw angle. NaN for unchanged.",
+        param5: "Latitude",
+        param6: "Longitude",
+        param7: "Landing altitude"
+      },
+      {
+        commandId: 16,
+        command: "MAV_CMD_NAV_WAYPOINT",
+        param1: "Hold time in decimal seconds.",
+        param2: "Acceptance radius in meters",
+        param3: "0 to pass through the WP",
+        param4: "Desired yaw angle at waypoint",
+        param5: "Latitude",
+        param6: "Longitude",
+        param7: "Altitude"
+      },
+      {
+        commandId: 20,
+        command: "MAV_CMD_NAV_RETURN_TO_LAUNCH",
+        param1: "",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 30,
+        command: "MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT",
+        param1: "Climb or Descend (0 = Neutral, command completes when within 5m of this command's altitude, 1 = Climbing, command completes when at or above this command's altitude, 2 = Descending, command completes when at or below this command's altitude.",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: "Desired altitude in meters"
+      },
+      {
+        commandId: 82,
+        command: "MAV_CMD_NAV_SPLINE_WAYPOINT",
+        param1: "Hold time in decimal seconds.",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "Latitude",
+        param6: "Longitude",
+        param7: "Altitude"
+      },
+      {
+        commandId: 92,
+        command: "MAV_CMD_NAV_GUIDED_ENABLE",
+        param1: "On / Off (> 0.5f on)",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 20,
+        command: "MAV_CMD_NAV_RETURN_TO_LAUNCH",
+        param1: "",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 178,
+        command: "MAV_CMD_DO_CHANGE_SPEED",
+        param1: "Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)",
+        param2: "Speed (m/s, -1 indicates no change)",
+        param3: "Throttle ( Percent, -1 indicates no change)",
+        param4: "absolute or relative [0,1]",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 183,
+        command: "MAV_CMD_DO_SET_SERVO",
+        param1: "Servo number",
+        param2: "PWM (microseconds, 1000 to 2000 typical)",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 193,
+        command: "MAV_CMD_DO_PAUSE_CONTINUE",
+        param1: "0: Pause current mission or reposition command, hold current position. 1: Continue mission. A VTOL capable vehicle should enter hover mode (multicopter and VTOL planes). A plane should loiter with the default loiter radius.",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 176,
+        command: "MAV_CMD_DO_SET_MODE",
+        param1: "Mode, as defined by ENUM MAV_MODE",
+        param2: "Custom mode - this is system specific, please refer to the individual autopilot specifications for details.",
+        param3: "Custom sub mode - this is system specific, please refer to the individual autopilot specifications for details.",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 186,
+        command: "MAV_CMD_DO_CHANGE_ALTITUDE",
+        param1: "Altitude in meters",
+        param2: "Mav frame of new altitude (see MAV_FRAME)",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+      {
+        commandId: 179,
+        command: "MAV_CMD_DO_SET_HOME",
+        param1: "Use current (1=use current location, 0=use specified location)",
+        param2: "",
+        param3: "",
+        param4: "",
+        param5: "Latitude",
+        param6: "Longitude",
+        param7: "Altitude"
+      },
+      {
+        commandId: 512,
+        command: "MAV_CMD_REQUEST_MESSAGE",
+        param1: "The MAVLink message ID of the requested message.",
+        param2: "Index id (if appropriate). The use of this parameter (if any), must be defined in the requested message.",
+        param3: "",
+        param4: "",
+        param5: "",
+        param6: "",
+        param7: ""
+      },
+    ];
   }
 
   requestPorts() {
@@ -187,6 +378,9 @@ export class MapToolComponent implements AfterViewInit {
     });
   }
 
+  sendMode() {
+    this.socketService.sendCustomMode(this.sandboxMode);
+  }
 
   startWork() {
     if (!this.flightPlan) { return; }
@@ -752,5 +946,7 @@ getCustomMode(value) {
     default: return "UNKNOWN";
   }
 }
+
+
   
 }
