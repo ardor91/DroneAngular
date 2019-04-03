@@ -55,5 +55,20 @@ export class SocketService {
   sendCustomMode(modeID) {
     this.socket.emit('custom_mode', modeID);
   }
+
+  sendCustomCommand(id, p1, p2, p3, p4, p5, p6, p7) {
+    console.log(id, p1, p2, p3, p4, p5, p6, p7);
+    this.socket.emit('custom_command', 
+    {
+      id: id, 
+      param1: !p1 ? 0 : p1,
+      param2: !p2 ? 0 : p2,
+      param3: !p3 ? 0 : p3,
+      param4: !p4 ? 0 : p4,
+      param5: !p5 ? 0 : p5,
+      param6: !p6 ? 0 : p6,
+      param7: !p7 ? 0 : p7 
+    })
+  }
   
 }

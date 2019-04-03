@@ -224,30 +224,43 @@
       <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
       <button (click)="armCopter(0)"  mat-raised-button>Disarm</button><br><br>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 1" value="0">          
+          <input matInput placeholder="Param 1" value="0" [(ngModel)]="sandboxParam1">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 2" value="0">          
+          <input matInput placeholder="Param 2" value="0" [(ngModel)]="sandboxParam2">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 3" value="0">          
+          <input matInput placeholder="Param 3" value="0" [(ngModel)]="sandboxParam3">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 4" value="0">          
+          <input matInput placeholder="Param 4" value="0" [(ngModel)]="sandboxParam4">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 5" value="0">          
+          <input matInput placeholder="Param 5" value="0" [(ngModel)]="sandboxParam5">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 6" value="0">          
+          <input matInput placeholder="Param 6" value="0" [(ngModel)]="sandboxParam6">          
       </mat-form-field>
       <mat-form-field class="example-full-width">
-          <input matInput placeholder="Param 7" value="0">          
+          <input matInput placeholder="Param 7" value="0" [(ngModel)]="sandboxParam7">          
       </mat-form-field>
-      <mat-form-field class="example-full-width">
-          <input matInput placeholder="Command Id" value="0">          
+      <mat-form-field class="example-full-width-long">
+          <mat-select placeholder="-- Select command --" (selectionChange)="getCommandDef()" [(ngModel)]="sandboxCommand" name="sandboxCommand">
+              <mat-option *ngFor="let command of commands" [value]="command.commandId">
+                {{command.command}}
+              </mat-option>
+            </mat-select>        
       </mat-form-field>
-    <button (click)="sendCommand()" mat-raised-button>Send command</button><br>
+    <button (click)="sendCommand()" mat-raised-button>Send command</button><br><br>
+    <mat-list *ngIf="sandboxCommand">
+        <mat-list-item> Param 1: {{sandboxCommandDef.param1}}</mat-list-item>
+        <mat-list-item> Param 2: {{sandboxCommandDef.param2}}</mat-list-item>
+        <mat-list-item> Param 3: {{sandboxCommandDef.param3}}</mat-list-item>
+        <mat-list-item> Param 4: {{sandboxCommandDef.param4}}</mat-list-item>
+        <mat-list-item> Param 5: {{sandboxCommandDef.param5}}</mat-list-item>
+        <mat-list-item> Param 6: {{sandboxCommandDef.param6}}</mat-list-item>
+        <mat-list-item> Param 7: {{sandboxCommandDef.param7}}</mat-list-item>
+       </mat-list>
     </mat-card-content>
 </mat-card>
 

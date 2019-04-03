@@ -160,6 +160,11 @@ io.on("connection", socket => {
   socket.on('custom_mode', (modeId) => {
     client.customMode(modeId);
   });
+
+  socket.on('custom_command', (commandDef) => {
+    console.log("CUSTOM: ", commandDef);
+    client.customCommand(commandDef);
+  });
 });
 
 

@@ -76,7 +76,16 @@ export class MapToolComponent implements AfterViewInit {
   isArmed: boolean;
 
   sandboxMode: any;
+  sandboxCommand: any;
+  sandboxCommandDef: CommandLongModel;
   commands: Array<CommandLongModel>;
+  sandboxParam1: any;
+  sandboxParam2: any;
+  sandboxParam3: any;
+  sandboxParam4: any;
+  sandboxParam5: any;
+  sandboxParam6: any;
+  sandboxParam7: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
   }
@@ -309,6 +318,14 @@ export class MapToolComponent implements AfterViewInit {
     ];
   }
 
+
+
+  getCommandDef() {
+    this.sandboxCommandDef =  this.commands.filter((command) => {
+      return command.commandId == this.sandboxCommand;
+    })[0];
+  }
+
   requestPorts() {
     this.getPorts();
   }
@@ -376,6 +393,10 @@ export class MapToolComponent implements AfterViewInit {
     this.snackBar.open(message, action, {
       duration: 10000,
     });
+  }
+
+  sendCommand() {
+    this.socketService.sendCustomCommand(this.sandboxCommand, this.sandboxParam1, this.sandboxParam2, this.sandboxParam3, this.sandboxParam4, this.sandboxParam5, this.sandboxParam6, this.sandboxParam7);
   }
 
   sendMode() {
