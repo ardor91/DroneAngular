@@ -73,6 +73,9 @@ export class MapToolComponent implements AfterViewInit {
 
   customHomePositionMarker: any;
   connected: any;
+  isArmed: boolean;
+
+  sandboxMode: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
   }
@@ -91,6 +94,7 @@ export class MapToolComponent implements AfterViewInit {
     this.getPorts();
     this.pointsArray = [];
     this.preArmMessages = [];
+    this.selectedAltitude = "0";
 
     this.socketService.mavlink_client_created.subscribe(data => {
       console.log(data);
@@ -102,7 +106,12 @@ export class MapToolComponent implements AfterViewInit {
     });
 
     this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2); });
-    this.socketService.heartbeat.subscribe(data => {this.heartbeat = data; });
+    this.socketService.heartbeat.subscribe(data => 
+      {
+        this.heartbeat = data; 
+        this.isArmed = ((this.heartbeat.base_mode & 128) >> 7) == 1;
+      }
+      );
     this.socketService.prearm.subscribe(data => {this.prearm = data; this.managePrearmMessages(data); });
 
     this.socketService.attitude.subscribe(data => {this.attitude = data; this.changeAttitude(data); });
@@ -189,7 +198,18 @@ export class MapToolComponent implements AfterViewInit {
   }
 
   reboot() {
-    this.socketService.rebootSystem();
+    const dialogRef = this.dialog.open(SelectPointDialogComponent, {
+      data: {
+        title: "Confirm action",
+        message: "Are you sure you want to reboot copter?",
+        description: "Copter will crash immediately if it is in flight"
+      }
+    });
+
+      dialogRef.afterClosed().subscribe(result => {
+        this.socketService.rebootSystem();
+      });
+    
   }
 
   setPosHold() {
@@ -427,7 +447,13 @@ console.log("OLOLO: ", this.prevPoint.center);
     this.map.addListener('click', function(e) {
       console.log('Map clicked at ', e.latLng.lat(), e.latLng.lng());
 
-      const dialogRef = component.dialog.open(SelectPointDialogComponent);
+      const dialogRef = component.dialog.open(SelectPointDialogComponent, {
+        data: {
+          title: "Confirm action",
+          message: "Are you want to send copter to this point?",
+          description: ""
+        }
+      });
 
       dialogRef.afterClosed().subscribe(result => {
         component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});

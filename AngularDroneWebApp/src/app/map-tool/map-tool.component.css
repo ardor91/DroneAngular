@@ -35,6 +35,15 @@
     display: flex;
 }
 
+.cardsContainer mat-card {
+    margin: 4px;
+}
+
 .flex {
     margin: 4px;
+}
+
+.mat-raised-button {
+    margin-left: 3px;
+    margin-right: 3px;
 }

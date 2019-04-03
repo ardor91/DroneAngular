@@ -1,73 +1,93 @@
-<mat-card>
+<div class="cardsContainer">
+  <mat-card>
+      <mat-card-header>
+        <mat-card-title>Connection</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field>
+          <mat-select placeholder="Ports available" (openedChange)="requestPorts()" [(ngModel)]="selectedPort" name="portsSelect">
+            <mat-option *ngFor="let port of availablePorts" [value]="port">
+              {{port}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-select placeholder="Select baud rate" [(ngModel)]="selectedBaud" name="baudSelect">
+            <mat-option [value]="57600">57600</mat-option>
+            <mat-option [value]="115200">115200</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Connect</button>
+        <button *ngIf="connected" mat-raised-button (click)="startListening()">Disconnect</button>
+      </mat-card-content>
+  </mat-card>
+  <mat-card>
     <mat-card-header>
-      <mat-card-title>Connection</mat-card-title>
+      <mat-card-title>Path planning</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-        <mat-form-field>
-            <mat-select placeholder="Ports available" (openedChange)="requestPorts()" [(ngModel)]="selectedPort" name="portsSelect">
-              <mat-option *ngFor="let port of availablePorts" [value]="port">
-                {{port}}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-select placeholder="Select baud rate" [(ngModel)]="selectedBaud" name="baudSelect">
-              <mat-option [value]="57600">57600</mat-option>
-              <mat-option [value]="115200">115200</mat-option>
-            </mat-select>
-          </mat-form-field>
-          
-          <button *ngIf="selectedPort" mat-raised-button (click)="startListening()">Connect</button>
-          <button *ngIf="connected" mat-raised-button (click)="startListening()">Disconnect</button>
+      <mat-slider
+              class="example-margin"
+              tickInterval="1000"
+              [max]="360"
+              [min]="0"
+              [step]="1"
+              [thumbLabel]="thumbLabel"
+              [(ngModel)]="gridAngle"
+              (change)="angleChanged()">
+          </mat-slider>
+
+          <mat-slider
+              class="example-margin"
+              [max]="0.0001"
+              [min]="0.000001"
+              [step]="0.000001"
+              [thumbLabel]="thumbLabel"
+              [(ngModel)]="gridStep"
+              [displayWith]="formatLabel"
+              (change)="stepChanged()">
+          </mat-slider>
+
+          <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Send plan</button>
     </mat-card-content>
-</mat-card>
+  </mat-card>
+  
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Control commands</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      Altitude: <mat-slider
+                  class="example-margin"
+                  [max]="15"
+                  [min]="0"
+                  [step]="1"
+                  [thumbLabel]="thumbLabel"
+                  [(ngModel)]="selectedAltitude">
+          </mat-slider>
+          <button mat-raised-button (click)="takeoff()">Takeoff at [{{selectedAltitude}}m.]</button>
+          <button mat-raised-button (click)="setStabilize()">Stabilize</button>
+          <button mat-raised-button (click)="setPosHold()">Position hold</button>
+          <button mat-raised-button (click)="rtl()">Return to Launch</button>
+          <button mat-raised-button (click)="land()">Land</button>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>System commands</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
+      <button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
+
+      <button (click)="reboot()"  mat-raised-button color="warn">Reboot</button>
+    </mat-card-content>
+  </mat-card>
+</div>
         
-
-        <mat-slider
-            class="example-margin"
-            tickInterval="1000"
-            [max]="360"
-            [min]="0"
-            [step]="1"
-            [thumbLabel]="thumbLabel"
-            [(ngModel)]="gridAngle"
-            (change)="angleChanged()">
-        </mat-slider>
-
-        <mat-slider
-            class="example-margin"
-            [max]="0.0001"
-            [min]="0.000001"
-            [step]="0.000001"
-            [thumbLabel]="thumbLabel"
-            [(ngModel)]="gridStep"
-            [displayWith]="formatLabel"
-            (change)="stepChanged()">
-        </mat-slider>
-        <button mat-raised-button (click)="changeSettings()">Change</button>
-
-        <button (click)="drawCCCC()" *ngIf="this.lastPolygon" mat-raised-button>Make path from polygon</button>
-
-        <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Start startWork</button>
-
-        <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
-        <button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
-
-        <button (click)="reboot()"  mat-raised-button>Reboot</button>
-
-        <mat-slider
-                class="example-margin"
-                [max]="3"
-                [min]="0"
-                [step]="1"
-                [thumbLabel]="thumbLabel"
-                [(ngModel)]="selectedAltitude">
-        </mat-slider>
-        <button mat-raised-button (click)="takeoff()">Takeoff</button>
-        <button mat-raised-button (click)="setStabilize()">Set stabilize mode</button>
-        <button mat-raised-button (click)="setPosHold()">Set pos hold mode</button>
-        <button mat-raised-button (click)="rtl()">RTL</button>
-        <button mat-raised-button (click)="land()">Land</button>
+        
 
 
 <div class="cardsContainer">
@@ -84,9 +104,9 @@
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
-        <span class="title">Base mode</span>
+        <span class="title">Arm status</span>
         <span class="fill-space"></span>
-        <span class="value">{{heartbeat.base_mode}}</span>  
+        <span class="value">{{isArmed ? 'Armed' : 'Disarmed'}}</span>  
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
@@ -155,12 +175,56 @@
     </mat-card-content>
   </mat-card>
 
-  <mat-card class="flex ">
+  <mat-card class="flex" style="display: none">
       <mat-card-header>
           <mat-card-title>Attitude screen</mat-card-title>
         </mat-card-header>
       <app-attitude roll="{{roll}}" pitch="{{pitch}}" yaw="{{yaw}}" style="width: 600px; height: 600px"></app-attitude>
   </mat-card>
+
+  <mat-card class="flex">
+    <mat-card-header>
+      <mat-card-title>Sandbox</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field>
+        <mat-select placeholder="-- Select mode --" [(ngModel)]="sandboxMode" name="sandboxMode">
+          <mat-option [value]="0">
+            COPTER_MODE_STABILIZE
+          </mat-option>
+          <mat-option [value]="2">
+              COPTER_MODE_ALT_HOLD
+          </mat-option>
+          <mat-option [value]="3">
+              COPTER_MODE_AUTO
+          </mat-option>
+          <mat-option [value]="4">
+              COPTER_MODE_GUIDED
+          </mat-option>
+          <mat-option [value]="5">
+              COPTER_MODE_LOITER
+          </mat-option>
+          <mat-option [value]="6">
+              COPTER_MODE_RTL
+          </mat-option>
+          <mat-option [value]="9">
+              COPTER_MODE_LAND
+          </mat-option>
+          <mat-option [value]="16">
+              COPTER_MODE_POSHOLD
+          </mat-option>
+          <mat-option [value]="17">
+              COPTER_MODE_BRAKE
+          </mat-option>
+          <mat-option [value]="18">
+              COPTER_MODE_THROW
+          </mat-option>
+        </mat-select>
+      </mat-form-field><button (click)="sendMode()" mat-raised-button>Send mode</button><br>
+      <button (click)="armCopter(1)"  mat-raised-button>Arm</button>
+      <button (click)="armCopter(0)"  mat-raised-button>Disarm</button>
+    </mat-card-content>
+</mat-card>
 
 
 </div>

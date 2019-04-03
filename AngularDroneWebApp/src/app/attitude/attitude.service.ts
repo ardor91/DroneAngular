@@ -47,7 +47,7 @@ export class AttitudeService {
       let geometry = new THREE.BoxGeometry(1, 1, 1);
       let material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       this.cube = new THREE.Mesh( geometry, material );
-      this.cube.position.set( 0, 0, 5 );
+      this.cube.position.set( 0, 0, 10 );
       //this.rotateObject(this.cube, 0, 0, 0);
 
       this.scene.add(this.cube);
@@ -125,6 +125,8 @@ export class AttitudeService {
       this.camera.rotation.z = roll;
       this.camera.rotation.x = -pitch;
       this.camera.rotation.y = -yaw;
+      this.cube.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 5);
+      this.cube.applyMatrix(this.camera.matrixWorld);
       requestAnimationFrame(() => {
         this.render();
       });
