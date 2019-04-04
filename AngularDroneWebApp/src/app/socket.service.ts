@@ -13,11 +13,17 @@ export class SocketService {
   attitude = this.socket.fromEvent<string>('attitude');
   home_position = this.socket.fromEvent<string>('homeposition')
   mavlink_client_created = this.socket.fromEvent<any>('mavlink_client_created');
+  ack = this.socket.fromEvent<any>('ack');
+  copter_status = this.socket.fromEvent<string>('copter_status');
 
   constructor(private socket: Socket) { }
 
   setNewPosition(gps) {
     this.socket.emit('newposition', gps);
+  }
+
+  sendFlightPlanSimulation(plan) {
+    this.socket.emit('flightplansimulation', plan);
   }
 
   sendFlightPlan(plan) {

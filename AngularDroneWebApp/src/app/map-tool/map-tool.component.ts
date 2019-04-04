@@ -1,13 +1,13 @@
 import { Component, AfterViewInit } from '@angular/core';
 import { MapLoaderService } from './map.loader'
 import { PathLogic } from '../../shared/utilities/PathLogic'
-import { Observable, Subscription } from 'rxjs';
 import { SocketService } from 'src/app/socket.service';
 import { ApiService } from 'src/app/api.service';
-import { isObject } from 'util';
-import {MatSnackBar} from '@angular/material';
-import {MatDialog} from '@angular/material';
+import { MavEnumsService } from 'src/app/map-tool/mav-enum.service';
+import { MatSnackBar } from '@angular/material';
+import { MatDialog } from '@angular/material';
 import { SelectPointDialogComponent } from './select-point-dialog/select-point-dialog.component';
+import { loadDroneOverlay } from './drone.overlay';
 
 declare var google: any;
 
@@ -17,10 +17,9 @@ declare var google: any;
   styleUrls: ['./map-tool.component.css']
 })
 export class MapToolComponent implements AfterViewInit {
-
-  roll = 0;
-  pitch = 0;
-  yaw = 0;
+  roll:number = 0;
+  pitch:number = 0;
+  yaw:number = 0;
 
   map: any;
   drawingManager: any;
@@ -30,24 +29,16 @@ export class MapToolComponent implements AfterViewInit {
   selectedPort: string;
   selectedBaud: string;
   selectedAltitude: string;
-  newGps: string;
-  newGps2: string;
-
-  prevPoint: any;
-  pointsArray: Array<any>;
-
-  private _gpsSub: Subscription;
-  private _gpsSub2: Subscription;
 
   prevGpsPoint: any;
   prevPath: Array<any>;
 
   image = 'src/assets/images/drone.png';
-  USGSOverlay: any;
-  droneOverlay: any;
+  homePositionImage = 'src/assets/images/helipad.png';
 
   gridAngle: any;
   gridStep: any;
+  droneOverlay: any;
 
   // sliders
   autoTicks = false;
@@ -87,22 +78,25 @@ export class MapToolComponent implements AfterViewInit {
   sandboxParam6: any;
   sandboxParam7: any;
 
-  constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog) {
+  basePositionOverlay: any;
+  lastHomePosition: any;
+
+  constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog, public enumsService: MavEnumsService) {
   }
 
   ngAfterViewInit() {
     MapLoaderService.load().then(() => {
-      this.drawPolygon();
-      this.test();
-      let gpss = new google.maps.LatLng(52.461099646230515, 30.95373939121498);
+      this.initGoogleMap();
 
-      this.droneOverlay = new this.USGSOverlay(gpss, this.image, this.map);
+      let gpss = new google.maps.LatLng(52.461099646230515, 30.95373939121498);
+      const DroneOverlayClass = loadDroneOverlay(google);
+      this.droneOverlay = new DroneOverlayClass(gpss, this.image, this.map);
+      this.basePositionOverlay = new DroneOverlayClass(gpss, this.homePositionImage, this.map, false, 1);      
     })
   }
 
   ngOnInit() {
     this.getPorts();
-    this.pointsArray = [];
     this.preArmMessages = [];
     this.selectedAltitude = "0";
 
@@ -115,215 +109,25 @@ export class MapToolComponent implements AfterViewInit {
       }
     });
 
-    this._gpsSub2 = this.socketService.testcoord.subscribe(gps => {this.newGps2 = gps; this.drawAngledArrow(this.newGps2); });
+    this.socketService.testcoord.subscribe(gps => { console.log("SIM RESPONSE: ", gps); this.moveDroneOverlay(gps); });
     this.socketService.heartbeat.subscribe(data => 
       {
         this.heartbeat = data; 
         this.isArmed = ((this.heartbeat.base_mode & 128) >> 7) == 1;
       }
-      );
-    this.socketService.prearm.subscribe(data => {this.prearm = data; this.managePrearmMessages(data); });
-
-    this.socketService.attitude.subscribe(data => {this.attitude = data; this.changeAttitude(data); });
-    this.socketService.home_position.subscribe(data => {console.log('Got new home', data); this.home_position = data;});
-
-    this.commands = [
-      {
-        commandId: 400,
-        command: "MAV_CMD_COMPONENT_ARM_DISARM",
-        param1: "1 to arm, 0 to disarm",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 246,
-        command: "MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN",
-        param1: "0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot, 3: Reboot autopilot and keep it in the bootloader until upgraded.",
-        param2: "0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer, 3: Reboot onboard computer and keep it in the bootloader until upgraded.",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 22,
-        command: "MAV_CMD_NAV_TAKEOFF",
-        param1: "Minimum pitch",
-        param2: "",
-        param3: "",
-        param4: "Yaw angle",
-        param5: "Latitude",
-        param6: "Longitude",
-        param7: "Altitude"
-      },
-      {
-        commandId: 21,
-        command: "MAV_CMD_NAV_LAND",
-        param1: "Minimum target altitude if landing is aborted",
-        param2: "Precision land mode.",
-        param3: "",
-        param4: "Desired yaw angle. NaN for unchanged.",
-        param5: "Latitude",
-        param6: "Longitude",
-        param7: "Landing altitude"
-      },
-      {
-        commandId: 16,
-        command: "MAV_CMD_NAV_WAYPOINT",
-        param1: "Hold time in decimal seconds.",
-        param2: "Acceptance radius in meters",
-        param3: "0 to pass through the WP",
-        param4: "Desired yaw angle at waypoint",
-        param5: "Latitude",
-        param6: "Longitude",
-        param7: "Altitude"
-      },
-      {
-        commandId: 20,
-        command: "MAV_CMD_NAV_RETURN_TO_LAUNCH",
-        param1: "",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 30,
-        command: "MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT",
-        param1: "Climb or Descend (0 = Neutral, command completes when within 5m of this command's altitude, 1 = Climbing, command completes when at or above this command's altitude, 2 = Descending, command completes when at or below this command's altitude.",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: "Desired altitude in meters"
-      },
-      {
-        commandId: 82,
-        command: "MAV_CMD_NAV_SPLINE_WAYPOINT",
-        param1: "Hold time in decimal seconds.",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "Latitude",
-        param6: "Longitude",
-        param7: "Altitude"
-      },
-      {
-        commandId: 92,
-        command: "MAV_CMD_NAV_GUIDED_ENABLE",
-        param1: "On / Off (> 0.5f on)",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 20,
-        command: "MAV_CMD_NAV_RETURN_TO_LAUNCH",
-        param1: "",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 178,
-        command: "MAV_CMD_DO_CHANGE_SPEED",
-        param1: "Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)",
-        param2: "Speed (m/s, -1 indicates no change)",
-        param3: "Throttle ( Percent, -1 indicates no change)",
-        param4: "absolute or relative [0,1]",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 183,
-        command: "MAV_CMD_DO_SET_SERVO",
-        param1: "Servo number",
-        param2: "PWM (microseconds, 1000 to 2000 typical)",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 193,
-        command: "MAV_CMD_DO_PAUSE_CONTINUE",
-        param1: "0: Pause current mission or reposition command, hold current position. 1: Continue mission. A VTOL capable vehicle should enter hover mode (multicopter and VTOL planes). A plane should loiter with the default loiter radius.",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 176,
-        command: "MAV_CMD_DO_SET_MODE",
-        param1: "Mode, as defined by ENUM MAV_MODE",
-        param2: "Custom mode - this is system specific, please refer to the individual autopilot specifications for details.",
-        param3: "Custom sub mode - this is system specific, please refer to the individual autopilot specifications for details.",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 186,
-        command: "MAV_CMD_DO_CHANGE_ALTITUDE",
-        param1: "Altitude in meters",
-        param2: "Mav frame of new altitude (see MAV_FRAME)",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-      {
-        commandId: 179,
-        command: "MAV_CMD_DO_SET_HOME",
-        param1: "Use current (1=use current location, 0=use specified location)",
-        param2: "",
-        param3: "",
-        param4: "",
-        param5: "Latitude",
-        param6: "Longitude",
-        param7: "Altitude"
-      },
-      {
-        commandId: 512,
-        command: "MAV_CMD_REQUEST_MESSAGE",
-        param1: "The MAVLink message ID of the requested message.",
-        param2: "Index id (if appropriate). The use of this parameter (if any), must be defined in the requested message.",
-        param3: "",
-        param4: "",
-        param5: "",
-        param6: "",
-        param7: ""
-      },
-    ];
+    );
+    this.socketService.prearm.subscribe(data => { this.prearm = data; this.managePrearmMessages(data); });
+    this.socketService.attitude.subscribe(data => { this.changeAttitude(data); });
+    this.socketService.home_position.subscribe(data => { this.home_position = data; });
+    this.socketService.ack.subscribe(data => { this.showAckMessage(data); });
+    this.socketService.copter_status.subscribe(data => { this.moveDroneOverlay(data) });
   }
 
-
-
-  getCommandDef() {
-    this.sandboxCommandDef =  this.commands.filter((command) => {
-      return command.commandId == this.sandboxCommand;
-    })[0];
+  showAckMessage(data) {
+    if(!data || !data.result) return;
+    this.snackBar.open(this.enumsService.getCommandName(data.command) + " is " + this.enumsService.getAckMessage(data.result), null, {
+      duration: 10000,
+    });
   }
 
   requestPorts() {
@@ -339,7 +143,6 @@ export class MapToolComponent implements AfterViewInit {
     });
     let tempArray = [];
     this.preArmMessages.forEach((message) => {
-      //console.log("diff: ", currTimestamp - message.timestamp);
       if((currTimestamp - message.timestamp) < 25 && !this.isMessageExist(message)) {
         tempArray.push(message);
       }
@@ -371,21 +174,18 @@ export class MapToolComponent implements AfterViewInit {
 
   stepChanged() {
     console.log(this.gridStep);
-    this.drawCCCC();
+    this.drawPath();
   }
 
   angleChanged() {
     console.log(this.gridAngle);
-    this.drawCCCC();
+    this.drawPath();
   }
 
   formatLabel(value: number | null) {
     if (!value) {
       return 0;
     }
-
-    
-
     return value * 1000000;
   }
 
@@ -400,8 +200,12 @@ export class MapToolComponent implements AfterViewInit {
   }
 
   sendMode() {
-    console.log("HUI ", this.sandboxMode);
     this.socketService.sendCustomMode(this.sandboxMode);
+  }
+
+  startSimulation() {
+    if (!this.flightPlan) { return; }
+    this.socketService.sendFlightPlanSimulation(this.flightPlan);
   }
 
   startWork() {
@@ -424,8 +228,7 @@ export class MapToolComponent implements AfterViewInit {
 
       dialogRef.afterClosed().subscribe(result => {
         this.socketService.rebootSystem();
-      });
-    
+      });    
   }
 
   setPosHold() {
@@ -458,119 +261,40 @@ export class MapToolComponent implements AfterViewInit {
 
   startListening(): void {
     console.log("Selected: ", this.selectedPort);
-    this.apiService.startListening(this.selectedPort, this.selectedBaud).subscribe(result => {
-      console.log("START LISTENING RESULT: " + result);
-      this._gpsSub = this.socketService.newcoordinate.subscribe(gps => {this.newGps = gps;  this.drawReceivedFromSerial(this.newGps)});
-    });
+    this.apiService.startListening(this.selectedPort, this.selectedBaud).subscribe(() => {});
   }
 
-  drawAngledArrow(gps) {
+  moveDroneOverlay(data) {
     if(!this.map) return;
-    /*let lineSymbol = {
-      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scaledSize: new google.maps.Size(200, 200),
-    };*/
-
-    //console.log(gps);
 
     if(!this.prevGpsPoint) {
-      this.prevGpsPoint = gps;
+      this.prevGpsPoint = data;
       this.map.setOptions({
-        center: new google.maps.LatLng(gps.lat, gps.lng)
+        center: new google.maps.LatLng(data.lat, data.lng)
       });
       return;
     }
 
-    let polyline = [gps, this.prevGpsPoint];
-    console.log(polyline);
-    /*let point = new google.maps.Polyline({
-      path: polyline,
-      strokeColor: '#FF0000',
-      strokeOpacity: 0.70001,
-      strokeWeight: 2,
-      map: this.map,
-      icons: [{
-        icon: lineSymbol,
-        offset: '100%'
-      }],
-    });*/
+    let polyline = [data, this.prevGpsPoint];
+
     let angle = 0;
-    if(this.prevGpsPoint)
+    /*if(this.prevGpsPoint)
     {
       var prevP = new google.maps.LatLng(this.prevGpsPoint.lat, this.prevGpsPoint.lng);
-      var currP = new google.maps.LatLng(gps.lat, gps.lng);
-      angle = google.maps.geometry.spherical.computeHeading(prevP, currP);
-    }
-    
-    this.droneOverlay.setPosition({lat: gps.lat, lng: gps.lng}, angle + 180, gps.batteryLevel, gps.sprayLevel);
-    //$.view.overlay.getPanes().overlayLayer.style['zIndex'] = 1001;
+      var currP = new google.maps.LatLng(data.lat, data.lng);
+      //angle = google.maps.geometry.spherical.computeHeading(prevP, currP);
+    }*/
 
-    if(this.prevPoint)
-      this.prevPoint.setMap(null);
-    //this.prevPoint = point;
-
-    this.prevGpsPoint = gps;
-  }
-
-  changeSettings() {
-    console.log(this.gridStep, this.gridAngle);
-  }
-
-  drawReceivedFromSerial(gps) {
-    var lineSymbol = {
-      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
-    };
-    var flightPlanCoordinates = [
-      {lat: 52.461099646230515, lng: 30.95373939121498},
-      {lat: 52.462099646230515, lng: 30.97373939121498},
-      {lat: 52.464099646230515, lng: 30.99373939121498},
-      {lat: 52.465099646230515, lng: 30.91373939121498}
-    ];
-    /*if(this.prevPoint)
-      this.prevPoint.setMap(null);*/
-    
-    var point = new google.maps.Polyline({
-      path: flightPlanCoordinates,
-      strokeColor: '#FF0000',
-      strokeOpacity: 0.00001,
-      strokeWeight: 0,
-      map: this.map
-    });
-
-    if(this.prevPoint) {
-      this.prevPoint.setOptions({
-        fillColor: '#222222',
-        strokeColor: '#444444'
-      });
-    }
-      //this.prevPoint.fillColor = '#222222';
-    this.pointsArray.splice(0, 0, point);
-    this.prevPoint = point;
-    console.log(this.pointsArray);
-    if(this.pointsArray.length > 50)
+    if(!this.lastHomePosition || this.lastHomePosition != data.basePosition)
     {
-      let oldestPoint = this.pointsArray.pop();
-      console.log("oldest: ", oldestPoint);
-      oldestPoint.setMap(null);
+      this.lastHomePosition = data.basePosition;
+      this.basePositionOverlay.setPosition({lat: data.basePosition.lat, lng: data.basePosition.lng}, 0);
     }
-
-
     
-console.log("OLOLO: ", this.prevPoint.center);
-    // Create the polyline and add the symbol via the 'icons' property.
-    var line = new google.maps.Polyline({
-      path: [{lat: this.prevPoint.center.lat, lng: this.prevPoint.center.lng}, {lat: gps.lat, lng: gps.lng}],
-      icons: [{
-        icon: lineSymbol,
-        offset: '100%'
-      }],
-      map: this.map
-    });
-
-    this.prevGpsPoint = gps;
+    this.droneOverlay.setPosition({lat: data.lat, lng: data.lng}, data.angle, data.batteryLevel, data.sprayLevel);
   }
 
-  drawCCCC() {
+  drawPath() {
     if(!this.lastPolygon) {
       return;
     }
@@ -580,15 +304,12 @@ console.log("OLOLO: ", this.prevPoint.center);
         element.setMap(null);
       });
     }
-    //console.log(this.lastPolygon);
     let array: Array<Point> = [];
     this.lastPolygon.forEach(element => {
-      //console.log(element.lat(), element.lng());
       array.push({X: element.lat(), Y: element.lng()});
     });
     console.log(array);
     let pathUtility = new PathLogic();
-    console.log("ebat, ", this.gridAngle, this.gridStep);
     let splines = pathUtility.GetPathLinesFromPolygon(array, +this.gridAngle, +this.gridStep);
     console.log(splines);
     let coords = [];
@@ -611,10 +332,11 @@ console.log("OLOLO: ", this.prevPoint.center);
     });
   }
   
-  drawPolygon() {
+  initGoogleMap() {
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: 52.461099646230515, lng: 30.95373939121498 },
-      zoom: 16
+      zoom: 18,
+      mapTypeId: 'satellite'
     });
 
     this.drawingManager = new google.maps.drawing.DrawingManager({
@@ -634,29 +356,22 @@ console.log("OLOLO: ", this.prevPoint.center);
         this.customHomePositionMarker.setMap(null);
       }
       this.customHomePositionMarker = event;
-      //alert(event.position.lat());
 
       this.socketService.setHome(event.position);
     });
 
     google.maps.event.addListener(this.drawingManager, 'polygoncomplete', (event) => {
-      
       // Polygon drawn
-      console.log("POLYGON FIRED");
       google.maps.event.addListener(event.getPath(), 'set_at', function() {
-        console.log('Vertex moved');
-        component.drawCCCC();
+        component.drawPath();
       });
       google.maps.event.addListener(event.getPath(), 'insert_at', function() {
-        console.log('Vertex created.');
-        component.drawCCCC();
+        component.drawPath();
       });
       google.maps.event.addListener(event.getPath(), 'remove_at', function() {
-        console.log('Vertex created.');
         if (event.getPath().length > 2) {
-          component.drawCCCC();
+          component.drawPath();
         }
-
       });
     });
 
@@ -675,8 +390,6 @@ console.log("OLOLO: ", this.prevPoint.center);
         component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
         console.log(`Dialog result: ${result}`);
       });
-      // component.droneOverlay.setPosition({lat: e.latLng.lat(), lng: e.latLng.lng()}, Math.floor(Math.random() * 360));
-      // component.socketService.setNewPosition({lat: e.latLng.lat(), lng: e.latLng.lng()});
     });
 
     google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
@@ -698,277 +411,21 @@ console.log("OLOLO: ", this.prevPoint.center);
         }));
       }
     });
-
-
-    /*var bounds = {
-      north: 52.98,
-      south: 50.99,
-      east: 30.98,
-      west: 30.96
-    };
-
-    var flightPlanCoordinates = [
-      {lat: 52.461099646230515, lng: 30.95373939121498},
-      {lat: 52.462099646230515, lng: 30.97373939121498},
-      {lat: 52.464099646230515, lng: 30.99373939121498},
-      {lat: 52.465099646230515, lng: 30.91373939121498}
-    ];
-
-    // Define the rectangle and set its editable property to true.
-    let rectangle = new google.maps.Polyline({
-      path: flightPlanCoordinates,
-      editable: true,
-      draggable: true
-    });
-
-    rectangle.setMap(this.map);
-
-    // Add an event listener on the rectangle.
-    rectangle.getPath().addListener('set_at', () => {console.log("Event fired");});*/
   }
-test() {
-  this.USGSOverlay = class extends (google.maps.OverlayView as { new():any}) {
-    image_: any;
-    map_: any;
-    div_: any;
-    rotation_: any;
-    gpsPoint_: any;
-    batteryLevel_: any;
-    sprayLevel_: any;
-    batteryDiv_: any;
-    sprayerDiv_: any;
-    constructor(gps, image, private map) {
-        super();
-        // Initialize all properties.
-        this.image_ = image;
-        this.map_ = map;
-        this.rotation_ = 0;
-        this.gpsPoint_ = gps;
-        this.batteryLevel_ = 100;
-        this.sprayLevel_ = 100;
-        // Define a property to hold the image's div. We'll
-        // actually create this div upon receipt of the onAdd()
-        // method so we'll leave it null for now.
-        this.div_ = null;
-        this.batteryDiv_ = null;
-        this.sprayerDiv_ = null;
-        // Explicitly call setMap on this overlay.
-        this.setMap(map);
-        this.set
-    }
-    /**
-     * onAdd is called when the map's panes are ready and the overlay has been
-     * added to the map.
-     */
-    onAdd() {
-        const div = document.createElement('div');
-        div.style.borderStyle = 'none';
-        div.style.borderWidth = '0px';
-        div.style.position = 'absolute';
-        // Create the img element and attach it to the div.
-        const img = document.createElement('img');
-        img.src = this.image_;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.position = 'absolute';
-        img.style.zIndex = '10000';
-        img.id = 'droneId';
-        div.appendChild(img);
 
-        const bdiv = document.createElement('div');
-        const sdiv = document.createElement('div');
-
-        bdiv.className = 'statusContainer battery';
-        sdiv.className = 'statusContainer spray';
-        bdiv.style.top = '-15px';
-        sdiv.style.top = '-30px';
-
-        bdiv.style.width = '80px';
-        bdiv.style.border = '2px solid #4b4641';
-        bdiv.style.left = '-12px';
-        bdiv.style.position = 'absolute';
-        bdiv.style.borderRadius = '2px';
-
-        sdiv.style.width = '80px';
-        sdiv.style.border = '2px solid #4b4641';
-        sdiv.style.left = '-12px';
-        sdiv.style.position = 'absolute';
-        sdiv.style.borderRadius = '2px';
-
-
-        const battery = document.createElement('div');
-        battery.style.width = (0.8 * this.batteryLevel_) + 'px';
-        battery.style.height = '8px';
-        battery.style.background = '#f14a42';
-        this.batteryDiv_ = battery;
-
-        const spray = document.createElement('div');
-        spray.style.width = (0.8 * this.sprayLevel_) + 'px';
-        spray.style.height = '8px';
-        spray.style.background = '#4260f1';
-        this.sprayerDiv_ = spray;
-
-        bdiv.appendChild(battery);
-        sdiv.appendChild(spray);
-
-        div.appendChild(bdiv);
-        div.appendChild(sdiv);
-
-        this.div_ = div;
-        // Add the element to the "overlayLayer" pane.
-        const panes = this.getPanes();
-        panes.overlayLayer.appendChild(div);
-        //console.log("PANES: ", panes);
-        //panes.overlayLayer.style['zIndex'] = 500;
-        //panes.markerLayer.style['zIndex'] = 400;
-    };
-    draw() {
-        // We use the south-west and north-east
-        // coordinates of the overlay to peg it to the correct position and size.
-        // To do this, we need to retrieve the projection from the overlay.
-        const overlayProjection = this.getProjection();
-        // Retrieve the south-west and north-east coordinates of this overlay
-        // in LatLngs and convert them to pixel coordinates.
-        // We'll use these coordinates to resize the div.
-        const gp = overlayProjection.fromLatLngToDivPixel(this.gpsPoint_);
-        // Resize the image's div to fit the indicated dimensions.
-        const div = this.div_;
-        div.style.left = (gp.x - 30) + 'px';
-        div.style.top = (gp.y - 30) + 'px';
-        div.style.width = '60px';
-        div.style.height = '60px';
-        div.style.transform = "rotate(" + this.rotation_ + "deg)";
-
-        this.batteryDiv_.style.width = (0.8 * this.batteryLevel_) + 'px';
-        this.sprayerDiv_.style.width = (0.8 * this.sprayLevel_) + 'px';
-    };
-    setPosition(gps, angle, battery, spray) {
-      this.gpsPoint_ = new google.maps.LatLng(gps.lat, gps.lng);
-      this.rotation_ = angle;
-      this.batteryLevel_ = battery;
-      this.sprayLevel_ = spray;
-      this.draw();
-    }
-    // The onRemove() method will be called automatically from the API if
-    // we ever set the overlay's map property to 'null'.
-    onRemove() {
-        this.div_.parentNode.removeChild(this.div_);
-        this.div_ = null;
-    };
-};
-}
-
-
-getSystemStatus(value) {
-  switch(value) { 
-    case 0: { 
-       return "Uninitialized system, state is unknown";
-    } 
-    case 1: { 
-       return "System is booting up";
-    }
-    case 2: { 
-      return "System is calibrating and not flight-ready";
-    } 
-    case 3: { 
-    return "System is grounded and on standby"; 
-    } 
-    case 4: { 
-      return "Motors are engaged"; 
-    } 
-    case 5: { 
-      return "Critical state"; 
-    } 
-    case 6: { 
-      return "Emergency! Lost control!"; 
-    } 
-    case 7: { 
-      return "Power down sequence initialized"; 
-    } 
-    case 8: { 
-      return "System terminating"; 
-    }  
-    default: { 
-        return "Unknown" 
-    } 
- } 
-}
-
-getSystemMode(value) {
-  switch(value) { 
-    case 128: { 
-       return "Uninitialized system, state is unknown";
-    } 
-    case 64: { 
-       return "System is booting up";
-    }
-    case 32: { 
-      return "System is calibrating and not flight-ready";
-    } 
-    case 16: { 
-    return "System is grounded and on standby"; 
-    } 
-    case 8: { 
-      return "Motors are engaged"; 
-    } 
-    case 4: { 
-      return "Critical state"; 
-    } 
-    case 2: { 
-      return "Emergency! Lost control!"; 
-    } 
-    case 1: { 
-      return "Power down sequence initialized"; 
-    }  
-    default: { 
-        return "Unknown" 
-    } 
- } 
-  
-  /*128	MAV_MODE_FLAG_SAFETY_ARMED	0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly. Additional note: this flag is to be ignore when sent in the command MAV_CMD_DO_SET_MODE and MAV_CMD_COMPONENT_ARM_DISARM shall be used instead. The flag can still be used to report the armed state.
-64	MAV_MODE_FLAG_MANUAL_INPUT_ENABLED	0b01000000 remote control input is enabled.
-32	MAV_MODE_FLAG_HIL_ENABLED	0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational.
-16	MAV_MODE_FLAG_STABILIZE_ENABLED	0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however further control inputs to move around.
-8	MAV_MODE_FLAG_GUIDED_ENABLED	0b00001000 guided mode enabled, system flies waypoints / mission items.
-4	MAV_MODE_FLAG_AUTO_ENABLED	0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not, depends on the actual implementation.
-2	MAV_MODE_FLAG_TEST_ENABLED	0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.
-1	MAV_MODE_FLAG_CUSTOM_MODE_ENABLED	0b00000001 Reserved for future use.*/
-}
-
-getMavType(value) {
-  switch(value) {
-    case 2: return "MAV_TYPE_QUADROTOR";
-    case 0: return "MAV_TYPE_GENERIC";
-    case 13: return "MAV_TYPE_HEXAROTOR";
-    default: return "UNKNOWN";
+  getCommandDef() {
+    this.sandboxCommandDef = this.enumsService.getCommandDef(this.sandboxCommand);
   }
-}
 
-getCustomMode(value) {
-  switch(value) {
-    case 0: return "COPTER_MODE_STABILIZE";
-    case 1: return "COPTER_MODE_ACRO";
-    case 2: return "COPTER_MODE_ALT_HOLD";
-    case 3: return "COPTER_MODE_AUTO";
-    case 4: return "COPTER_MODE_GUIDED";
-    case 5: return "COPTER_MODE_LOITER";
-    case 6: return "COPTER_MODE_RTL";
-    case 7: return "COPTER_MODE_CIRCLE";
-    case 9: return "COPTER_MODE_LAND";
-    case 11: return "COPTER_MODE_DRIFT";
-    case 13: return "COPTER_MODE_SPORT";
-    case 14: return "COPTER_MODE_FLIP";
-    case 15: return "COPTER_MODE_AUTOTUNE";
-    case 16: return "COPTER_MODE_POSHOLD";
-    case 17: return "COPTER_MODE_BRAKE";
-    case 18: return "COPTER_MODE_THROW";
-    case 19: return "COPTER_MODE_AVOID_ADSB";
-    case 20: return "COPTER_MODE_GUIDED_NOGPS";
-    case 21: return "COPTER_MODE_SMART_RTL";
-    default: return "UNKNOWN";
+  getSystemStatus(value) {
+    return this.enumsService.getSystemStatus(value);
   }
-}
 
+  getMavType(value) {
+    return this.enumsService.getMavType(value);
+  }
 
-  
+  getCustomMode(value) {
+    return this.enumsService.getCustomMode(value);
+  }
 }

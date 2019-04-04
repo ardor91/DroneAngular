@@ -27,7 +27,7 @@
       <mat-card-title>Path planning</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <mat-slider
+      <mat-slider *ngIf="this.lastPolygon"
               class="example-margin"
               tickInterval="1000"
               [max]="360"
@@ -38,7 +38,7 @@
               (change)="angleChanged()">
           </mat-slider>
 
-          <mat-slider
+          <mat-slider *ngIf="this.lastPolygon"
               class="example-margin"
               [max]="0.0001"
               [min]="0.000001"
@@ -49,6 +49,7 @@
               (change)="stepChanged()">
           </mat-slider>
 
+          <button (click)="startSimulation()" *ngIf="this.lastPolygon" mat-raised-button>Send plan simulation</button>
           <button (click)="startWork()" *ngIf="this.lastPolygon" mat-raised-button>Send plan</button>
     </mat-card-content>
   </mat-card>

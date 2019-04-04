@@ -7,10 +7,11 @@ const SerialPortNode= require('serial-node'), serialNode = new SerialPortNode();
 const SerialPort = require('serialport');
 const MavlinkClient = require('../services/mavlinkClient');
 
-const DEFAULT_PORT = "COM100";
+const DEFAULT_PORT = "COM10";
 const DEFAULT_BAUD = 115200;
 let CURRENT_PORT = null;
 let client = null;
+let currentGPSPoint = null;
 
 let connectMavlink = (port, baud) => {
   client = new MavlinkClient(port, baud, 1, 1);
@@ -32,9 +33,19 @@ let connectMavlink = (port, baud) => {
     client.subscribeToHomePosition((data) => {
       io.emit('homeposition', data);
     });
+
+    client.subscribeToAckResponse((data) => {
+      io.emit('ack', data);
+    });
     
     client.subscribeToGps((data) => {
-      io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: 60});
+      currentGPSPoint = {
+        lat: data.lat,
+        lng: data.lon,
+        alt: data.alt,
+        angle: data.cog
+      };
+      io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: data.cog});
     });
 
     io.emit('mavlink_client_created', { status: 1, message: "Success" });
@@ -44,7 +55,6 @@ let connectMavlink = (port, baud) => {
   });
 }
 
-let parser = undefined;
 let port = undefined;
 
 let targetPosition = undefined;
@@ -52,6 +62,20 @@ let flightPlan = undefined;
 let planPointIndex = 0;
 let batteryLevel = 100;
 let sprayLevel = 100;
+let onPosition = false;
+let batteryDischargeSpeed = 5;
+let sprayDischargeSpeed = 10;
+let iteration = 0;
+let lastPosition = null;
+let lastTargetPosition = null;
+let basePosition = {
+    lat: 52.461099646230515,
+    lng: 30.953739391214980
+};
+//0 - idle, 1 - working, 2 - going to base, 3 - charging, 4 - finished and going home, 5 - going back to work
+let status = 0;
+let toggleSpray = false;
+let acceptanceRadius = 0.00001;
 
 //connectMavlink(DEFAULT_PORT, DEFAULT_BAUD);
 
@@ -61,7 +85,49 @@ io.on("connection", socket => {
   });*/
 
   socket.on('flightplan', (plan) => {
-    console.log("NEW PLAN BLAT, ", plan);
+    let flag = false;
+    flightPlan = [];
+    plan.forEach(line => {
+      if(flag) {
+        flightPlan.push({
+          position: line.StartPoint,
+          sprayerOn: flag
+        });
+        flightPlan.push({
+          position: line.EndPoint,
+          sprayerOn: !flag
+        });
+      } else {
+        flightPlan.push({
+          position: line.EndPoint,
+          sprayerOn: flag
+        });
+        flightPlan.push({
+          position: line.StartPoint,
+          sprayerOn: !flag
+        });        
+      }
+      flag = !flag;
+    });
+
+    planPointIndex = 0;
+    targetPosition = {
+      lat: flightPlan[0].position.X,
+      lng: flightPlan[0].position.Y
+    };
+    status = 1;
+    console.log(flightPlan);
+    let lat = 52.461099646230515;
+    let lng = 30.953739391214980;
+    iteration = 0;
+    client.takeOff(5);
+    setTimeout(() => {
+      loop();
+    }, 10000);
+  });
+
+  socket.on('flightplansimulation', (plan) => {
+    console.log("SIMULATION STARTED");
     let flag = false;
     flightPlan = [];
     plan.forEach(line => {
@@ -98,8 +164,6 @@ io.on("connection", socket => {
     let lng = 30.953739391214980;
     let angle = 0;
     iteration = 0;
-  
-
   emit(lat, lng, angle);
     //targetPosition = position;
   });
@@ -124,8 +188,8 @@ io.on("connection", socket => {
 
   socket.on('setHome', async gps => {
     client.setHomePosition(gps.lat, gps.lng);
+    basePosition = {lat: gps.lat, lng: gps.lng};
     let newHome = await client.getHomePosition();
-    console.log('NEWHOME:', newHome);
     io.emit('homeposition', newHome);
   });
 
@@ -158,12 +222,10 @@ io.on("connection", socket => {
   });
 
   socket.on('custom_mode', (modeId) => {
-    console.log("INNER HUI", modeId);
     client.customMode(modeId);
   });
 
   socket.on('custom_command', (commandDef) => {
-    console.log("CUSTOM: ", commandDef);
     client.customCommand(commandDef);
   });
 });
@@ -171,8 +233,6 @@ io.on("connection", socket => {
 
 
 //let mavport = new SerialPort("COM14", {baudRate: 115200, autoOpen: true});
-
-let onPosition = false;
 
 function move(current, target) {
     let iSpeed = 0.00001;
@@ -195,22 +255,9 @@ function move(current, target) {
     return current;
 }
 
-let batteryDischargeSpeed = 5;
-let sprayDischargeSpeed = 10;
-let iteration = 0;
-let lastPosition = null;
-let lastTargetPosition = null;
-let basePosition = {
-    lat: 52.461099646230515,
-    lng: 30.953739391214980
-};
-//0 - idle, 1 - working, 2 - going to base, 3 - charging, 4 - finished and going home, 5 - going back to work
-let status = 0;
-let toggleSpray = false;
-
 function emit(lat, lng, angle) {
   setTimeout(() => {
-      console.log(status);
+      console.log("SIMSTATUS: " + status);
     if(status == 1) {
         lastPosition = {lat: lat, lng: lng};
     }
@@ -285,11 +332,98 @@ function emit(lat, lng, angle) {
           }     
           
     }
-    io.emit('gpstest', {lat: lat, lng: lng, angle: angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray});
+    io.emit('gpstest', {lat: lat, lng: lng, angle: angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray, basePosition: basePosition});
     
 
     iteration++;
     emit(lat, lng, angle);
+  }, 100);
+}
+// 0 - idle, 1 - working, 2 - going to base, 3 - charging, 4 - finished and going home, 5 - going back to work
+// repeat every 100ms
+function loop() {
+  setTimeout(() => {
+    console.log(status);
+    // working
+    if(status == 1) {
+        lastPosition = {lat: currentGPSPoint.lat, lng: currentGPSPoint.lng};
+    }
+    /*if(status == 1 && (batteryLevel < 20 || sprayLevel <= 0)) {
+        status = 2;
+        targetPosition = basePosition;
+    }*/
+
+    /*if(status == 1 || status == 2) {
+        if(iteration % batteryDischargeSpeed == 0 && batteryLevel > 0) {
+            batteryLevel--;
+        }
+    }*/
+    /*if(status == 1) {
+        if(iteration % sprayDischargeSpeed == 0 && sprayLevel > 0) {
+            sprayLevel--;
+        }
+    }*/
+
+    /*if (status == 3) {
+        if(iteration % batteryDischargeSpeed == 0 && batteryLevel < 100) {
+            batteryLevel++;
+        }
+        if(iteration % sprayDischargeSpeed == 0 && sprayLevel < 100) {
+            sprayLevel++;
+        }
+        if(batteryLevel == 100 && sprayLevel == 100) {
+            status = 5;
+            targetPosition = lastPosition;
+        }
+    }*/
+
+    if( status == 1 || status == 2 || status == 4 || status == 5) {
+      onPosition = true;
+
+      if(Math.abs(currentGPSPoint.lat - targetPosition.lat) > acceptanceRadius || Math.abs(currentGPSPoint.lng - targetPosition.lng) > acceptanceRadius)
+      {
+          onPosition = false;
+      }
+
+      if(onPosition) {
+        // finished and going home and on home position now
+        if(status == 4) {
+            status = 0; // idle
+            return;
+        }
+        // going back to home and on home position now
+        if(status == 2) {
+            status = 3; // charging
+        }
+        // going back to work and on latest position now
+        if(status == 5) {
+            targetPosition = lastTargetPosition;
+            status = 1; // working
+        } else
+        // working and on target position now
+        if(status == 1) {
+          // no next target
+          if(flightPlan.length <= planPointIndex) {
+            targetPosition = basePosition; 
+            status = 4; // going home
+          } else {
+            // get next target position
+            targetPosition = {
+              lat: flightPlan[planPointIndex].position.X,
+              lng: flightPlan[planPointIndex].position.Y
+            };
+            client.navToWaypoint(0, 0, targetPosition.lat, targetPosition.lng, 5);
+            lastTargetPosition = targetPosition;
+            toggleSpray = flightPlan[planPointIndex].sprayerOn;
+            planPointIndex++;
+          }
+        }
+      }               
+    }
+    io.emit('copter_status', {lat: currentGPSPoint.lat, lng: currentGPSPoint.lng, angle: currentGPSPoint.angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray, basePosition: basePosition});
+    
+    iteration++;
+    loop();
   }, 100);
 }
 
