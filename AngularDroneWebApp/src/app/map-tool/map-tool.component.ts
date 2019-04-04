@@ -400,6 +400,7 @@ export class MapToolComponent implements AfterViewInit {
   }
 
   sendMode() {
+    console.log("HUI ", this.sandboxMode);
     this.socketService.sendCustomMode(this.sandboxMode);
   }
 
@@ -470,7 +471,7 @@ export class MapToolComponent implements AfterViewInit {
       scaledSize: new google.maps.Size(200, 200),
     };*/
 
-    console.log(gps);
+    //console.log(gps);
 
     if(!this.prevGpsPoint) {
       this.prevGpsPoint = gps;

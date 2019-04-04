@@ -87,6 +87,11 @@ module.exports = class MavlinkClient {
                         });
                     }                
                 });
+
+                //listen for Status messages
+                this._mavlinkObject.on("COMMAND_ACK", (message, fields) => {
+                    console.log("ACK: ", fields);              
+                });
     
                 //listen for GPS messages
                 this._mavlinkObject.on("GPS_RAW_INT", (message, fields) => {
@@ -190,7 +195,7 @@ module.exports = class MavlinkClient {
     }
 
     customMode(modeId) {
-        this.setMode(modeId);
+        this.setMode(89, modeId);
     }
 
     customCommand(command) {
@@ -241,8 +246,9 @@ module.exports = class MavlinkClient {
     //MAV_CMD_DO_PAUSE_CONTINUE 193  1: 0=pause 1=continue
 
     //MAV_CMD_DO_SET_MODE 176   1: ENUM MAV_MODE (220 = AUTO_ARMED), 2: ArduCopter-specific mode name
-    setMode(modeIndex, baseIndex = 81) {
-        this._sendCommandLong(0, modeIndex, 0, 0, 0, 0, 0, 176, 1);
+    setMode(baseIndex = 89, modeIndex, submode = 0) {
+        console.log("SET MODE: ", modeIndex);
+        this._sendCommandLong(baseIndex, modeIndex, submode, 0, 0, 0, 0, 176, 1);
     }
 
     //MAV_CMD_DO_CHANGE_ALTITUDE 186 1: alt 

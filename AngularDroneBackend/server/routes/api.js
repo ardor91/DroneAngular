@@ -150,7 +150,7 @@ io.on("connection", socket => {
   });
 
   socket.on('setModePosHold', () => {
-    client.setMode(client.modes.COPTER_MODE_POSHOLD, 89);
+    client.setMode(client.modes.COPTER_MODE_POSHOLD, 4, 4);
   });
 
   socket.on('newposition', (gps) => {
@@ -158,6 +158,7 @@ io.on("connection", socket => {
   });
 
   socket.on('custom_mode', (modeId) => {
+    console.log("INNER HUI", modeId);
     client.customMode(modeId);
   });
 
