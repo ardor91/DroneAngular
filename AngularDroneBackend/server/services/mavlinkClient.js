@@ -18,6 +18,8 @@ module.exports = class MavlinkClient {
         this._batteryStatusSibscribers = [];
         this._homePositionSubscribers = [];
         this._commandAckSubscribers = [];
+        this._time_usec = 0;
+        this._currentGps = {lat: 0, lng: 0};
     }
 
     get modes() {
@@ -76,6 +78,7 @@ module.exports = class MavlinkClient {
                     this._heartbeatSubscribers.forEach(subscriber => {
                         subscriber(fields);
                     });
+                    //this.requestMessage(24);
                 });
     
                 //listen for Status messages
@@ -99,6 +102,12 @@ module.exports = class MavlinkClient {
     
                 //listen for GPS messages
                 this._mavlinkObject.on("GPS_RAW_INT", (message, fields) => {
+                    //console.log("GPS ", fields);
+                    if(fields.time_usec && fields.time_usec != 0) {
+                        //console.log("GOTCHA")
+                         this._time_usec =  fields.time_usec;
+                            this._currentGps = {lat: fields.lat, lng: fields.lon};
+                    }
                     this._gpsSubscribers.forEach(subscriber => {
                         subscriber(fields);
                     });
@@ -211,16 +220,16 @@ module.exports = class MavlinkClient {
     }
 
     takeOff(altitude) {
-        console.log('TAKEOFF; ', altitude);
+        console.log('CLI TAKEOFF; ', altitude);
         //this.setMode(5, 216);
         //0	1	0	16	0	0	0	0	52.461707	30.952236	136.090000	1
         //this._sendCommandLong(2, 2, 60, 0, 0, 0, 0, 178, 1);
 
         //this._sendCommandLong(5, 0, 0, 0, 52.461707, 30.952236, 10, 16, 1);
         
-        //this._sendCommandLong(0, 0, 0, 0, 0, 0, 5, 22, 1);
+        this._sendCommandLong(0, 0, 0, 0, 0, 0, altitude, 22, 1);
 
-        this._set_position_target_global_int(0, 1, 0, 0, alt);
+       // this._set_position_target_global_int(0, 1, this._currentGps.lat, this._currentGps.lng, altitude);
     }
 
     land(lat, lng, alt) {
@@ -317,23 +326,25 @@ module.exports = class MavlinkClient {
 
     //SET_POSITION_TARGET_GLOBAL_INT 86
     _set_position_target_global_int(change_pos, change_alt, lat, lng, alt) {
-        let type_mask = 65535;
+        let type_mask = 65472;
         if(change_pos && change_alt)
         {
-            type_mask -= 7;
+            //type_mask -= 7;
         }
-        if(!change_pos) {
-            type_mask -= 3;
+        if(change_pos) {
+            //type_mask -= 3;
         }
-        if(!change_alt) {
-            type_mask -= 4;
+        if(change_alt) {
+            //type_mask -= 4;
         }
-        this._mavlinkObject.createMessage("SET_POSITION_TARGET_GLOBAL_INT",
+        console.log("MASK: ", type_mask, lat, lng, alt);
+        this._mavlinkObject.createMessage(86,
         { 
+            'time_boot_ms': 0,
             'target_system': 1,
-            'target_component': 1,
+            'target_component': 0,
             'coordinate_frame': 6, // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
-            'type_mask': type_mask,
+            'type_mask': 3576, //0b110111111000, //3576
             'alt': alt,
             'lat_int': lat * 1e7,
             'lon_int': lng * 1e7,

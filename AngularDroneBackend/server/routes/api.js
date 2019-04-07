@@ -45,7 +45,8 @@ let connectMavlink = (port, baud) => {
         alt: data.alt,
         angle: data.cog
       };
-      io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: data.cog});
+      console.log("GPS: ", data);
+      io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: data.cog, fix_type: data.fix_type});
     });
 
     io.emit('mavlink_client_created', { status: 1, message: "Success" });
@@ -194,6 +195,7 @@ io.on("connection", socket => {
   });
 
   socket.on('takeoff', (altitude) => {
+    console.log("API TAKEOFF: ", altitude);
     client.takeOff(altitude);
   });
 

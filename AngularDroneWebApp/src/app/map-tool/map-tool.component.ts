@@ -80,6 +80,7 @@ export class MapToolComponent implements AfterViewInit {
 
   basePositionOverlay: any;
   lastHomePosition: any;
+  gpsRaw: any;
 
   constructor(private socketService: SocketService, private apiService: ApiService, private snackBar: MatSnackBar, public dialog: MatDialog, public enumsService: MavEnumsService) {
   }
@@ -109,7 +110,7 @@ export class MapToolComponent implements AfterViewInit {
       }
     });
 
-    this.socketService.testcoord.subscribe(gps => { console.log("SIM RESPONSE: ", gps); this.moveDroneOverlay(gps); });
+    this.socketService.testcoord.subscribe(gps => { this.gpsRaw = gps; console.log("SIM RESPONSE: ", gps); this.moveDroneOverlay(gps); });
     this.socketService.heartbeat.subscribe(data => 
       {
         this.heartbeat = data; 
@@ -285,7 +286,7 @@ export class MapToolComponent implements AfterViewInit {
       //angle = google.maps.geometry.spherical.computeHeading(prevP, currP);
     }*/
 
-    if(!this.lastHomePosition || this.lastHomePosition != data.basePosition)
+    if(data.basePosition && (!this.lastHomePosition || this.lastHomePosition != data.basePosition))
     {
       this.lastHomePosition = data.basePosition;
       this.basePositionOverlay.setPosition({lat: data.basePosition.lat, lng: data.basePosition.lng}, 0);

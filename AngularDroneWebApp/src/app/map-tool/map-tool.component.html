@@ -105,6 +105,16 @@
       </mat-list-item>
       <mat-divider></mat-divider>
       <mat-list-item>
+        <span class="title">GPS Fix</span>
+        <span class="fill-space"></span>
+        <span class="value" *ngIf="gpsRaw && gpsRaw.fix_type == 0">No GPS connected</span>  
+        <span class="value" *ngIf="gpsRaw && gpsRaw.fix_type == 1">No position information, GPS is connected</span> 
+        <span class="value" *ngIf="gpsRaw && gpsRaw.fix_type == 2">2D position</span> 
+        <span class="value" *ngIf="gpsRaw && gpsRaw.fix_type == 3">3D position</span> 
+        <span class="value" *ngIf="gpsRaw && gpsRaw.fix_type == 4">DGPS/SBAS aided 3D position</span> 
+      </mat-list-item>
+      <mat-divider></mat-divider>
+      <mat-list-item>
         <span class="title">Arm status</span>
         <span class="fill-space"></span>
         <span class="value">{{isArmed ? 'Armed' : 'Disarmed'}}</span>  
