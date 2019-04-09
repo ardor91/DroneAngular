@@ -18,6 +18,10 @@ export class SocketService {
 
   constructor(private socket: Socket) { }
 
+  sendInterval() {
+    this.socket.emit('sendinterval', 1);
+  }
+
   setNewPosition(gps) {
     this.socket.emit('newposition', gps);
   }

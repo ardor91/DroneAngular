@@ -265,6 +265,10 @@ export class MapToolComponent implements AfterViewInit {
     this.apiService.startListening(this.selectedPort, this.selectedBaud).subscribe(() => {});
   }
 
+  sendInterval() {
+    this.socketService.sendInterval();
+  }
+
   moveDroneOverlay(data) {
     if(!this.map) return;
 

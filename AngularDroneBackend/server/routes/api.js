@@ -45,7 +45,7 @@ let connectMavlink = (port, baud) => {
         alt: data.alt,
         angle: data.cog
       };
-      console.log("GPS: ", data);
+      //console.log("GPS: ", data);
       io.emit('gpstest', {lat: (data.lat / 10000000), lng: (data.lon / 10000000), angle: data.cog, fix_type: data.fix_type});
     });
 
@@ -123,6 +123,8 @@ io.on("connection", socket => {
     iteration = 0;
     client.takeOff(5);
     setTimeout(() => {
+      console.log("Starting loop");
+      client.navToWaypoint(0, 0, targetPosition.lat, targetPosition.lng, 5);
       loop();
     }, 10000);
   });
@@ -229,6 +231,10 @@ io.on("connection", socket => {
 
   socket.on('custom_command', (commandDef) => {
     client.customCommand(commandDef);
+  });
+
+  socket.on('sendinterval', () => {
+    client.sendInterval();
   });
 });
 
@@ -345,9 +351,10 @@ function emit(lat, lng, angle) {
 // repeat every 100ms
 function loop() {
   setTimeout(() => {
-    console.log(status);
+    //console.log(status);
     // working
     if(status == 1) {
+        //console.log();
         lastPosition = {lat: currentGPSPoint.lat, lng: currentGPSPoint.lng};
     }
     /*if(status == 1 && (batteryLevel < 20 || sprayLevel <= 0)) {
@@ -382,12 +389,14 @@ function loop() {
     if( status == 1 || status == 2 || status == 4 || status == 5) {
       onPosition = true;
 
-      if(Math.abs(currentGPSPoint.lat - targetPosition.lat) > acceptanceRadius || Math.abs(currentGPSPoint.lng - targetPosition.lng) > acceptanceRadius)
+      if(Math.abs(currentGPSPoint.lat / 10000000 - targetPosition.lat) > acceptanceRadius || Math.abs(currentGPSPoint.lng / 10000000 - targetPosition.lng) > acceptanceRadius)
       {
+          //console.log("not on position. diffLat: ", Math.abs(currentGPSPoint.lat / 10000000 - targetPosition.lat), "diff lon: ", Math.abs(currentGPSPoint.lng / 10000000 - targetPosition.lng));
           onPosition = false;
       }
 
       if(onPosition) {
+        console.log("On position");
         // finished and going home and on home position now
         if(status == 4) {
             status = 0; // idle
@@ -414,6 +423,7 @@ function loop() {
               lat: flightPlan[planPointIndex].position.X,
               lng: flightPlan[planPointIndex].position.Y
             };
+
             client.navToWaypoint(0, 0, targetPosition.lat, targetPosition.lng, 5);
             lastTargetPosition = targetPosition;
             toggleSpray = flightPlan[planPointIndex].sprayerOn;
@@ -422,11 +432,11 @@ function loop() {
         }
       }               
     }
-    io.emit('copter_status', {lat: currentGPSPoint.lat, lng: currentGPSPoint.lng, angle: currentGPSPoint.angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray, basePosition: basePosition});
+    //io.emit('copter_status', {lat: currentGPSPoint.lat, lng: currentGPSPoint.lng, angle: currentGPSPoint.angle, onPosition: onPosition, batteryLevel: batteryLevel, sprayLevel: sprayLevel, sprayToggled: toggleSpray, basePosition: basePosition});
     
     iteration++;
     loop();
-  }, 100);
+  }, 3000);
 }
 
 router.get('/ports', (req, res) => {

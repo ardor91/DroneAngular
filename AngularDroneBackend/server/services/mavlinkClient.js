@@ -101,7 +101,7 @@ module.exports = class MavlinkClient {
                 });
     
                 //listen for GPS messages
-                this._mavlinkObject.on("GPS_RAW_INT", (message, fields) => {
+                this._mavlinkObject.on("GLOBAL_POSITION_INT", (message, fields) => {
                     //console.log("GPS ", fields);
                     if(fields.time_usec && fields.time_usec != 0) {
                         //console.log("GOTCHA")
@@ -240,6 +240,7 @@ module.exports = class MavlinkClient {
     navToWaypoint(holdTime = 0, radius = 1, lat, lng, alt) {
         //MAV_CMD_NAV_WAYPOINT 16
         //this._sendCommandLong(holdTime, radius, 0, 0, lat, lng, alt, 16, 1);
+        console.log("nav: ", lat, lng);
         this._set_position_target_global_int(1, 1, lat, lng, alt);
     }
 
@@ -302,6 +303,20 @@ module.exports = class MavlinkClient {
     // https://mavlink.io/en/messages/common.html#mavlink-messages
     requestMessage(messageId) {
         this._sendCommandLong(messageId, 0, 0, 0, 0, 0, 0, 512, 1);
+    }
+
+    sendInterval() {
+        this._mavlinkObject.createMessage("REQUEST_DATA_STREAM",
+        { 
+            'req_stream_id': 6,
+            'req_message_rate': 0x05,
+            'start_stop': 1,
+            'target_system': 1,
+            'target_component': 1
+        },
+        (message) => {
+            this._mavport.write(message.buffer);
+        });
     }
 
     _sendCommandLong(param1, param2, param3, param4, param5, param6, param7, command, confirmation) {
